@@ -92,7 +92,7 @@ ethernetStatus_t GroveStreams::run(void)
             else if (millis() - _msLastPacket >= RECEIVE_TIMEOUT) {
                 ++timeout;
                 _msLastPacket = millis();
-                Serial << endl << _msLastPacket << F(" Timeout") << endl;
+                Serial << endl << _msLastPacket << F(" Recv timeout") << endl;
                 client.stop();
                 if (_ledPin >= 0) digitalWrite(_ledPin, LOW);
                 GS_STATE = GS_DISCONNECT;

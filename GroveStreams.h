@@ -21,7 +21,7 @@ enum ethernetStatus_t { NO_STATUS, SEND_ACCEPTED, PUT_COMPLETE, DISCONNECTING, D
 
 const int serverPort = 80;
 extern EthernetClient client;
-const unsigned long RECEIVE_TIMEOUT = 10000;    //ms to wait for response from server
+const unsigned long RECEIVE_TIMEOUT = 8000;    //ms to wait for response from server
 
 class GroveStreams
 {
