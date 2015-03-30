@@ -1,6 +1,7 @@
 //TO DO
 //Count errors, meaning any of: SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER
 //Reset count when HTTP_OK occurs.  WDT reset if three consecutive errors.
+//Use conditional compilation to make posting stats optional.
 //Use WDT in main loop? (8 sec) -- DONE
 //
 //Pullups on unused pins
