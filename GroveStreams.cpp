@@ -187,6 +187,29 @@ void GroveStreams::ipToText(char* dest, IPAddress ip)
     sprintf(dest, "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
 }
 
+//convert a hostname to an ip address
+int GroveStreams::dnsLookup(const char* hostname, IPAddress& addr)
+{
+    int ret = 0;
+    DNSClient dns;
+
+    dns.begin(Ethernet.dnsServerIP());
+    ret = dns.getHostByName(hostname, addr);
+    return ret;
+}
+
+//reset the mcu
+void GroveStreams::mcuReset(void)
+{
+    Serial << millis() << F(" Reset in");
+    wdt_enable(WDTO_4S);
+    int countdown = 4;
+    while (1) {
+        Serial << ' ' << countdown--;
+        delay(1000);
+    }
+}
+
 ethernetPacket::ethernetPacket(void)
 {
     _nchar = 0;
@@ -237,4 +260,3 @@ void ethernetPacket::flush(void)
         _next = _buf;
     }
 }
-

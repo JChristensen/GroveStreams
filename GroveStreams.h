@@ -14,9 +14,11 @@
 
 #include <avr/wdt.h>
 #include <Arduino.h>
+#include <Dns.h>
 #include <Ethernet.h>               //http://arduino.cc/en/Reference/Ethernet
-#include <NTP.h>
+//#include <NTP.h>
 #include <MemoryFree.h>             //http://playground.arduino.cc/Code/AvailableMemory
+#include <Streaming.h>              //http://arduiniana.org/libraries/streaming/
 
 enum ethernetStatus_t { NO_STATUS, SEND_ACCEPTED, PUT_COMPLETE, DISCONNECTING, DISCONNECTED, HTTP_OK, SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER };
 
@@ -48,6 +50,8 @@ class GroveStreams
 
     private:
         ethernetStatus_t _xmit(void);
+        int dnsLookup(const char* hostname, IPAddress& addr);
+        void mcuReset(void);
         char _localIP[16];
         char _groveStreamsIP[16];
         const char* _serverName;
@@ -60,9 +64,7 @@ class GroveStreams
         unsigned long _msLastPacket;
         unsigned long _msDisconnecting;
         unsigned long _msDisconnected;
-
         int _ledPin;
-
 };
 
 const uint16_t PKTSIZE = 300;
