@@ -151,10 +151,6 @@ ethernetStatus_t GroveStreams::_xmit(void)
     if ( client.connect(serverIP, serverPort) ) {
         _msConnected = millis();
         Serial << _msConnected << F(" connected") << endl;
-        freeMem = freeMemory();
-//        client << F("PUT /api/feed?&api_key=") << _apiKey << F("&compId=") << _compID;
-//        client << _data << F(" HTTP/1.1\nHost: ") << serverIP << F("\nConnection: close\nX-Forwarded-For: ");
-//        client << Ethernet.localIP() << F("\nContent-Type: application/json\n\n");
         packet.putChar( F("PUT /api/feed?&api_key=") );
         packet.putChar(_apiKey);
         packet.putChar( F("&compId=") );

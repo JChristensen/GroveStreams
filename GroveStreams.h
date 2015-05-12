@@ -16,8 +16,6 @@
 #include <Arduino.h>
 #include <Dns.h>
 #include <Ethernet.h>               //http://arduino.cc/en/Reference/Ethernet
-//#include <NTP.h>
-#include <MemoryFree.h>             //http://playground.arduino.cc/Code/AvailableMemory
 #include <Streaming.h>              //http://arduiniana.org/libraries/streaming/
 
 enum ethernetStatus_t { NO_STATUS, SEND_ACCEPTED, PUT_COMPLETE, DISCONNECTING, DISCONNECTED, HTTP_OK, SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER };
