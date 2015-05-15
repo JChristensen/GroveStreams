@@ -18,10 +18,12 @@ GroveStreams::GroveStreams(const char* serverName, const __FlashStringHelper* ap
 void GroveStreams::begin(void)
 {
     int ret = dnsLookup(_serverName, serverIP);
-    if (ret == 1) {
+    if (ret == 1)
+    {
         Serial << millis() << F(" GroveStreams ") << serverIP << endl;
     }
-    else {
+    else
+    {
         Serial << millis() << F(" GS DNS lookup fail, ret=") << ret << endl;
         mcuReset();
     }
@@ -29,7 +31,11 @@ void GroveStreams::begin(void)
     ipToText(_groveStreamsIP, serverIP);
 }
 
-enum gsState_t { GS_WAIT, GS_SEND, GS_RECV, GS_DISCONNECT } GS_STATE;
+enum gsState_t
+{
+    GS_WAIT, GS_SEND, GS_RECV, GS_DISCONNECT
+};
+gsState_t GS_STATE;
 
 //GroveStreams state machine
 ethernetStatus_t GroveStreams::run(void)
@@ -44,12 +50,14 @@ ethernetStatus_t GroveStreams::run(void)
         break;
 
     case GS_SEND:
-        if ( _xmit() == PUT_COMPLETE ) {
+        if ( _xmit() == PUT_COMPLETE )
+        {
             _msLastPacket = millis();    //initialize receive timeout
             GS_STATE = GS_RECV;
             ret = PUT_COMPLETE;
         }
-        else {
+        else
+        {
             GS_STATE = GS_WAIT;
             ret = CONNECT_FAILED;
         }
@@ -57,55 +65,64 @@ ethernetStatus_t GroveStreams::run(void)
 
     case GS_RECV:
         {
-        boolean haveStatus = false;
-        boolean httpOK = false;
+            boolean haveStatus = false;
+            boolean httpOK = false;
 
-        if(client.connected()) {
-            uint16_t nChar = client.available();
-            if (nChar > 0) {
-                _msLastPacket = millis();
-                Serial << _msLastPacket << F(" received packet, len=") << nChar << endl;
-                char* b = statusBuf;
-                for (uint16_t i = 0; i < nChar; i++) {
-                    char ch = client.read();
-                    Serial << _BYTE(ch);
-                    if ( !haveStatus && i < sizeof(statusBuf) ) {
-                        if ( ch == '\r' || i == sizeof(statusBuf) - 1 ) {
-                            haveStatus = true;
-                            *b++ = 0;
-                            if (strncmp(statusBuf, httpOKText, sizeof(httpOKText)) == 0) {
-                                httpOK = true;
-                                ret = HTTP_OK;
-//                                Serial << endl << endl << millis() << F(" HTTP OK") << endl;
+            if(client.connected())
+            {
+                uint16_t nChar = client.available();
+                if (nChar > 0)
+                {
+                    _msLastPacket = millis();
+                    Serial << _msLastPacket << F(" received packet, len=") << nChar << endl;
+                    char* b = statusBuf;
+                    for (uint16_t i = 0; i < nChar; i++)
+                    {
+                        char ch = client.read();
+                        Serial << _BYTE(ch);
+                        if ( !haveStatus && i < sizeof(statusBuf) )
+                        {
+                            if ( ch == '\r' || i == sizeof(statusBuf) - 1 )
+                            {
+                                haveStatus = true;
+                                *b++ = 0;
+                                if (strncmp(statusBuf, httpOKText, sizeof(httpOKText)) == 0)
+                                {
+                                    httpOK = true;
+                                    ret = HTTP_OK;
+                                }
+                                else
+                                {
+                                    ret = HTTP_OTHER;
+                                    Serial << endl << endl << millis() << F(" HTTP STATUS: ") << statusBuf << endl;
+                                }
                             }
-                            else {
-                                ret = HTTP_OTHER;
-                                Serial << endl << endl << millis() << F(" HTTP STATUS: ") << statusBuf << endl;
+                            else
+                            {
+                                *b++ = ch;
                             }
-                        }
-                        else {
-                            *b++ = ch;
                         }
                     }
                 }
+                //if too much time has elapsed since the last packet, time out and close the connection from this end
+                else if (millis() - _msLastPacket >= RECEIVE_TIMEOUT)
+                {
+                    ++timeout;
+                    _msLastPacket = millis();
+                    Serial << endl << _msLastPacket << F(" Recv timeout") << endl;
+                    client.stop();
+                    if (_ledPin >= 0) digitalWrite(_ledPin, LOW);
+                    GS_STATE = GS_DISCONNECT;
+                    ret = TIMEOUT;
+                }
             }
-            //if too much time has elapsed since the last packet, time out and close the connection from this end
-            else if (millis() - _msLastPacket >= RECEIVE_TIMEOUT) {
-                ++timeout;
-                _msLastPacket = millis();
-                Serial << endl << _msLastPacket << F(" Recv timeout") << endl;
-                client.stop();
-                if (_ledPin >= 0) digitalWrite(_ledPin, LOW);
+            else
+            {
                 GS_STATE = GS_DISCONNECT;
-                ret = TIMEOUT;
+                ret = DISCONNECTING;
             }
+            break;
         }
-        else {
-            GS_STATE = GS_DISCONNECT;
-            ret = DISCONNECTING;
-        }
-        break;
-    }
 
     case GS_DISCONNECT:
         // close client end
@@ -129,13 +146,15 @@ ethernetStatus_t GroveStreams::run(void)
 //returns -1 if e.g. transmission already in progress, waiting response, etc.
 ethernetStatus_t GroveStreams::send(const char* compID, const char* data)
 {
-    if (GS_STATE == GS_WAIT) {
+    if (GS_STATE == GS_WAIT)
+    {
         _compID = compID;
         _data = data;
         GS_STATE = GS_SEND;
         lastStatus = SEND_ACCEPTED;
     }
-    else {
+    else
+    {
         lastStatus = SEND_BUSY;
     }
     return lastStatus;
@@ -145,11 +164,12 @@ ethernetStatus_t GroveStreams::send(const char* compID, const char* data)
 ethernetStatus_t GroveStreams::_xmit(void)
 {
     ethernetPacket packet;
-    
+
     _msConnect = millis();
     Serial << _msConnect << F(" connecting") << endl;
     if (_ledPin >= 0) digitalWrite(_ledPin, HIGH);
-    if ( client.connect(serverIP, serverPort) ) {
+    if ( client.connect(serverIP, serverPort) )
+    {
         _msConnected = millis();
         Serial << _msConnected << F(" connected") << endl;
         packet.putChar( F("PUT /api/feed?&api_key=") );
@@ -168,7 +188,8 @@ ethernetStatus_t GroveStreams::_xmit(void)
         connTime = _msConnected - _msConnect;
         lastStatus = PUT_COMPLETE;
     }
-    else {
+    else
+    {
         _msConnected = millis();
         connTime = _msConnected - _msConnect;
         Serial << _msConnected << F(" connect failed") << endl;
@@ -201,7 +222,8 @@ void GroveStreams::mcuReset(void)
     Serial << millis() << F(" Reset in");
     wdt_enable(WDTO_4S);
     int countdown = 4;
-    while (1) {
+    while (1)
+    {
         Serial << ' ' << countdown--;
         delay(1000);
     }
@@ -215,12 +237,15 @@ ethernetPacket::ethernetPacket(void)
 
 void ethernetPacket::putChar(const char* c)
 {
-    if (_nchar > 0) {       //if buffer is not empty, back up one character to overlay the previous zero terminator
+    if (_nchar > 0)       //if buffer is not empty, back up one character to overlay the previous zero terminator
+    {
         --_nchar;
         --_next;
-    }        
-    while ( *_next++ = *c++ ) {             //copy the next character
-        if (++_nchar >= PKTSIZE - 1) {      //if only one byte left
+    }
+    while ( *_next++ = *c++ )              //copy the next character
+    {
+        if (++_nchar >= PKTSIZE - 1)       //if only one byte left
+        {
             *_next++ = 0;                   //put in the terminator
             ++_nchar;                       //and count it
             flush();                        //send the buffer
@@ -233,12 +258,15 @@ void ethernetPacket::putChar(const __FlashStringHelper *f)
 {
     const char PROGMEM *c = (const char PROGMEM *)f;
 
-    if (_nchar > 0) {       //if buffer is not empty, back up one character to overlay the previous zero terminator
+    if (_nchar > 0)         //if buffer is not empty, back up one character to overlay the previous zero terminator
+    {
         --_nchar;
         --_next;
-    }        
-    while ( *_next++ = pgm_read_byte(c++) ) {   //copy the next character
-        if (++_nchar >= PKTSIZE - 1) {      //if only one byte left
+    }
+    while ( *_next++ = pgm_read_byte(c++) ) //copy the next character
+    {
+        if (++_nchar >= PKTSIZE - 1)        //if only one byte left
+        {
             *_next++ = 0;                   //put in the terminator
             ++_nchar;                       //and count it
             flush();                        //send the buffer
@@ -249,10 +277,9 @@ void ethernetPacket::putChar(const __FlashStringHelper *f)
 
 void ethernetPacket::flush(void)
 {
-    if (_nchar > 0) {
+    if (_nchar > 0)
+    {
         client << _buf;
-//        Serial << millis() << F(" Ethernet packet len: ") << _nchar - 1 << endl;
-//        Serial << _buf << endl;
         _nchar = 0;
         _next = _buf;
     }
