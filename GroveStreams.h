@@ -12,8 +12,8 @@
 #ifndef _GROVESTREAMS_H
 #define _GROVESTREAMS_H
 
-#include <avr/wdt.h>
 #include <Arduino.h>
+#include <avr/wdt.h>
 #include <Dns.h>
 #include <Ethernet.h>               //http://arduino.cc/en/Reference/Ethernet
 #include <Streaming.h>              //http://arduiniana.org/libraries/streaming/
@@ -21,7 +21,6 @@
 enum ethernetStatus_t { NO_STATUS, SEND_ACCEPTED, PUT_COMPLETE, DISCONNECTING, DISCONNECTED, HTTP_OK, SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER };
 
 const int serverPort = 80;
-extern EthernetClient client;
 const unsigned long RECEIVE_TIMEOUT = 8000;    //ms to wait for response from server
 
 class GroveStreams

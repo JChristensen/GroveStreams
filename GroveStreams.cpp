@@ -3,7 +3,8 @@
 //        Component name and ID part of send() call ... Looks like only comp ID needed. -- DONE
 
 //GroveStreams Class
-#include "GroveStreams.h"
+#include <GroveStreams.h>
+EthernetClient client;
 
 //Constructor
 GroveStreams::GroveStreams(const char* serverName, const __FlashStringHelper* apiKey, int ledPin)
@@ -146,7 +147,7 @@ ethernetStatus_t GroveStreams::_xmit(void)
     ethernetPacket packet;
     
     _msConnect = millis();
-    Serial << _msConnect << F(" connecting") << F(" WDTCSR=0x") << _HEX(WDTCSR) << endl;
+    Serial << _msConnect << F(" connecting") << endl;
     if (_ledPin >= 0) digitalWrite(_ledPin, HIGH);
     if ( client.connect(serverIP, serverPort) ) {
         _msConnected = millis();
