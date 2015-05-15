@@ -4,10 +4,6 @@
 // is licensed under CC BY-SA 4.0,
 // http://creativecommons.org/licenses/by-sa/4.0/
 
-//TO DO
-//Count errors, meaning any of: SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER
-//Reset count when HTTP_OK occurs.  WDT reset if three consecutive errors.
-
 #ifndef _GROVESTREAMS_H
 #define _GROVESTREAMS_H
 
@@ -23,8 +19,9 @@ enum ethernetStatus_t
     SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER
 };
 
-const int serverPort(80);
-const unsigned long RECEIVE_TIMEOUT(8000);    //ms to wait for response from server
+const uint8_t MAX_ERROR(5);                 //reset mcu after this many errors
+const uint32_t RECEIVE_TIMEOUT(8000);       //ms to wait for response from server
+const int serverPort(80);                   //http port
 
 class GroveStreams
 {
@@ -39,14 +36,16 @@ public:
     ethernetStatus_t lastStatus;
 
     //web posting stats
-    unsigned int seq;                   //number of sends requested
-    unsigned int success;               //number of sends accepted
-    unsigned int fail;                  //number of sends rejected
-    unsigned long connTime;             //time to connect to server in milliseconds
-    unsigned long respTime;             //response time in milliseconds
-    unsigned long discTime;             //time to disconnect from server in milliseconds
-    unsigned int timeout;               //number of Ethernet timeouts
-    unsigned int freeMem;               //bytes of free SRAM
+    uint16_t httpOK;                    //number of HTTP OK responses received
+    uint8_t nError;                     //error count since last httpOK (SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER)
+    uint16_t sendSeq;                   //number of sends requested
+    uint16_t sendBusy;                  //number of sends rejected
+    uint16_t connFail;                  //number of connection failures
+    uint16_t recvTimeout;               //number of timeouts waiting for server response
+    uint16_t httpOther;                 //number of non-OK HTTP responses received (i.e. not HTTP status 200)
+    uint32_t connTime;                  //time to connect to server in milliseconds
+    uint32_t respTime;                  //response time in milliseconds
+    uint32_t discTime;                  //time to disconnect from server in milliseconds
 
 private:
     ethernetStatus_t _xmit(void);

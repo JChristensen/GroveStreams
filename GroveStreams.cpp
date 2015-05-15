@@ -44,6 +44,12 @@ ethernetStatus_t GroveStreams::run(void)
     ethernetStatus_t ret = NO_STATUS;
     const char httpOKText[] = "HTTP/1.1 200 OK";
     static char statusBuf[sizeof(httpOKText)];
+    
+    if ( nError >= MAX_ERROR )
+    {
+        Serial << millis() << F(" too many network errors\n");
+        mcuReset();
+    }
 
     switch (GS_STATE)
     {
@@ -60,6 +66,8 @@ ethernetStatus_t GroveStreams::run(void)
         else
         {
             GS_STATE = GS_WAIT;
+            ++connFail;
+            ++nError;
             ret = CONNECT_FAILED;
         }
         break;
@@ -67,7 +75,6 @@ ethernetStatus_t GroveStreams::run(void)
     case GS_RECV:
         {
             boolean haveStatus = false;
-            boolean httpOK = false;
 
             if(client.connected())
             {
@@ -89,11 +96,14 @@ ethernetStatus_t GroveStreams::run(void)
                                 *b++ = 0;
                                 if (strncmp(statusBuf, httpOKText, sizeof(httpOKText)) == 0)
                                 {
-                                    httpOK = true;
+                                    ++httpOK;
+                                    nError = 0;
                                     ret = HTTP_OK;
                                 }
                                 else
                                 {
+                                    ++httpOther;
+                                    ++nError;
                                     ret = HTTP_OTHER;
                                     Serial << endl << endl << millis() << F(" HTTP STATUS: ") << statusBuf << endl;
                                 }
@@ -108,12 +118,13 @@ ethernetStatus_t GroveStreams::run(void)
                 //if too much time has elapsed since the last packet, time out and close the connection from this end
                 else if (millis() - _msLastPacket >= RECEIVE_TIMEOUT)
                 {
-                    ++timeout;
                     _msLastPacket = millis();
-                    Serial << endl << _msLastPacket << F(" Recv timeout") << endl;
+                    Serial << endl << _msLastPacket << F(" Recv timeout\n");
                     client.stop();
                     if (_ledPin >= 0) digitalWrite(_ledPin, LOW);
                     GS_STATE = GS_DISCONNECT;
+                    ++recvTimeout;
+                    ++nError;
                     ret = TIMEOUT;
                 }
             }
@@ -128,13 +139,13 @@ ethernetStatus_t GroveStreams::run(void)
     case GS_DISCONNECT:
         // close client end
         _msDisconnecting = millis();
-        Serial << _msDisconnecting << F(" disconnecting") << endl;
+        Serial << _msDisconnecting << F(" disconnecting\n");
         client.stop();
         if (_ledPin >= 0) digitalWrite(_ledPin, LOW);
         _msDisconnected = millis();
         respTime = _msLastPacket - _msPutComplete;
         discTime = _msDisconnected - _msDisconnecting;
-        Serial << _msDisconnected << F(" disconnected") << endl;
+        Serial << _msDisconnected << F(" disconnected\n");
         GS_STATE = GS_WAIT;
         ret = DISCONNECTED;
         break;
@@ -143,14 +154,13 @@ ethernetStatus_t GroveStreams::run(void)
     return ret;
 }
 
-//returns SEND_BUSY if e.g. transmission already in progress, waiting response, etc.,
-//else returns SEND_ACCEPTED.
+//send data to GroveStreams. returns SEND_BUSY if e.g. transmission already in progress,
+//waiting response, etc., else returns SEND_ACCEPTED.
 ethernetStatus_t GroveStreams::send(const char* compID, const char* data)
 {
-    ++seq;
+    ++sendSeq;
     if (GS_STATE == GS_WAIT)
     {
-        ++success;
         _compID = compID;
         _data = data;
         GS_STATE = GS_SEND;
@@ -158,24 +168,25 @@ ethernetStatus_t GroveStreams::send(const char* compID, const char* data)
     }
     else
     {
-        ++fail;
+        ++sendBusy;
+        ++nError;
         lastStatus = SEND_BUSY;
     }
     return lastStatus;
 }
 
-//Send data to GroveStreams
+//transmit data to GroveStreams
 ethernetStatus_t GroveStreams::_xmit(void)
 {
     ethernetPacket packet;
 
     _msConnect = millis();
-    Serial << _msConnect << F(" connecting") << endl;
+    Serial << _msConnect << F(" connecting\n");
     if (_ledPin >= 0) digitalWrite(_ledPin, HIGH);
     if ( client.connect(serverIP, serverPort) )
     {
         _msConnected = millis();
-        Serial << _msConnected << F(" connected") << endl;
+        Serial << _msConnected << F(" connected\n");
         packet.putChar( F("PUT /api/feed?&api_key=") );
         packet.putChar(_apiKey);
         packet.putChar( F("&compId=") );
@@ -196,7 +207,7 @@ ethernetStatus_t GroveStreams::_xmit(void)
     {
         _msConnected = millis();
         connTime = _msConnected - _msConnect;
-        Serial << _msConnected << F(" connect failed") << endl;
+        Serial << _msConnected << F(" connect failed\n");
         if (_ledPin >= 0) digitalWrite(_ledPin, LOW);
         lastStatus = CONNECT_FAILED;
     }
