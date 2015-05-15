@@ -1,8 +1,9 @@
-//TO DO:  Differentiate additional statuses ... current code should be good?
-//        Count errors, reset MCU after n consecutive errors
-//        Component name and ID part of send() call ... Looks like only comp ID needed. -- DONE
+// Arduino GroveStreams Library
+//
+// "Arduino GroveStreams Library" by Jack Christensen
+// is licensed under CC BY-SA 4.0,
+// http://creativecommons.org/licenses/by-sa/4.0/
 
-//GroveStreams Class
 #include <GroveStreams.h>
 EthernetClient client;
 
@@ -142,12 +143,14 @@ ethernetStatus_t GroveStreams::run(void)
     return ret;
 }
 
-//request data to be sent. returns 0 if accepted.
-//returns -1 if e.g. transmission already in progress, waiting response, etc.
+//returns SEND_BUSY if e.g. transmission already in progress, waiting response, etc.,
+//else returns SEND_ACCEPTED.
 ethernetStatus_t GroveStreams::send(const char* compID, const char* data)
 {
+    ++seq;
     if (GS_STATE == GS_WAIT)
     {
+        ++success;
         _compID = compID;
         _data = data;
         GS_STATE = GS_SEND;
@@ -155,6 +158,7 @@ ethernetStatus_t GroveStreams::send(const char* compID, const char* data)
     }
     else
     {
+        ++fail;
         lastStatus = SEND_BUSY;
     }
     return lastStatus;

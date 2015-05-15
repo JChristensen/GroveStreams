@@ -1,14 +1,13 @@
+// Arduino GroveStreams Library
+//
+// "Arduino GroveStreams Library" by Jack Christensen
+// is licensed under CC BY-SA 4.0,
+// http://creativecommons.org/licenses/by-sa/4.0/
+
 //TO DO
 //Count errors, meaning any of: SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER
 //Reset count when HTTP_OK occurs.  WDT reset if three consecutive errors.
-//Use conditional compilation to make posting stats optional.
-//Use WDT in main loop? (8 sec) -- DONE
-//
-//Pullups on unused pins
-//struct for data to be posted
-//test sprintf performance vs. DIY -- DONE sprintf faster but increases code space by ~1000 bytes (so what)
 
-//GroveStreams Class
 #ifndef _GROVESTREAMS_H
 #define _GROVESTREAMS_H
 
@@ -24,8 +23,8 @@ enum ethernetStatus_t
     SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER
 };
 
-const int serverPort = 80;
-const unsigned long RECEIVE_TIMEOUT = 8000;    //ms to wait for response from server
+const int serverPort(80);
+const unsigned long RECEIVE_TIMEOUT(8000);    //ms to wait for response from server
 
 class GroveStreams
 {
@@ -39,13 +38,13 @@ public:
     IPAddress serverIP;
     ethernetStatus_t lastStatus;
 
-    //data to be posted
-    unsigned int seq;                   //post sequence number
+    //web posting stats
+    unsigned int seq;                   //number of sends requested
+    unsigned int success;               //number of sends accepted
+    unsigned int fail;                  //number of sends rejected
     unsigned long connTime;             //time to connect to server in milliseconds
     unsigned long respTime;             //response time in milliseconds
     unsigned long discTime;             //time to disconnect from server in milliseconds
-    unsigned int success;               //number of successful posts
-    unsigned int fail;                  //number of Ethernet connection failures
     unsigned int timeout;               //number of Ethernet timeouts
     unsigned int freeMem;               //bytes of free SRAM
 
@@ -69,7 +68,7 @@ private:
     int _ledPin;
 };
 
-const uint16_t PKTSIZE = 300;
+const uint16_t PKTSIZE(300);
 class ethernetPacket
 {
 public:
