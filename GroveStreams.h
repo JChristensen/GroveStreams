@@ -10,7 +10,7 @@
 #include <Arduino.h>
 #include <avr/wdt.h>
 #include <Dns.h>
-#include <Ethernet.h>               //http://arduino.cc/en/Reference/Ethernet
+#include <Ethernet.h>
 #include <Streaming.h>              //http://arduiniana.org/libraries/streaming/
 
 enum ethernetStatus_t
@@ -19,9 +19,9 @@ enum ethernetStatus_t
     SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER
 };
 
-const uint8_t MAX_ERROR(5);                 //reset mcu after this many errors
-const uint32_t RECEIVE_TIMEOUT(8000);       //ms to wait for response from server
-const int serverPort(80);                   //http port
+const uint8_t MAX_ERROR(5);             //reset mcu after this many errors
+const uint32_t RECEIVE_TIMEOUT(8000);   //ms to wait for response from server
+const int serverPort(80);               //http port
 
 class GroveStreams
 {

@@ -1,7 +1,7 @@
 #GroveStreams Library for Arduino
 http://github.com/JChristensen/GroveStreams  
 ReadMe file  
-Jack Christensen Dec 2014  
+Jack Christensen May 2015  
 
 ![CC BY-SA](http://mirrors.creativecommons.org/presskit/buttons/80x15/png/by-sa.png)
 

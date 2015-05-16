@@ -8,11 +8,9 @@
 EthernetClient client;
 
 //Constructor
-GroveStreams::GroveStreams(const char* serverName, const __FlashStringHelper* apiKey, int ledPin)
+GroveStreams::GroveStreams(const char* serverName, const __FlashStringHelper* apiKey, int ledPin):
+_serverName(serverName), _apiKey(apiKey), _ledPin(ledPin)
 {
-    _serverName = serverName;
-    _apiKey = apiKey;
-    _ledPin = ledPin;
 }
 
 //Initialize GroveStreams
