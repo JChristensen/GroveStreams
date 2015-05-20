@@ -24,10 +24,10 @@ To use the **GroveStreams** library:
 ## Examples ##
 The following example sketches are included with the **GroveStreams** library:
 - **gsAnalog:** A standalone GroveStreams client using an Arduino Uno, Arduino Ethernet Shield, and an analog temperature sensor.
-- **gsGateway:** A data concentrator/web gateway node for a XBee ZB wireless sensor network. Use with the **gsSensor** example sketch.
+- **gsGateway:** A data concentrator/web gateway node for an XBee ZB wireless sensor network. Use with the **gsSensor** example sketch.
 - **gsSensor:** A wireless sensor node for use with **gsGateway**. Forwards sensor data to the gateway node which relays it to GroveStreams.
 
-See my [blog post](http://adventuresinarduinoland.blogspot.com/) for step-by-step instructions to build a wireless sensor network using the **gsGateway** and **gsSensor** sketches.
+See my [blog post](http://adventuresinarduinoland.blogspot.com/2015/05/a-grovestreams-wireless-sensor-network.html) for step-by-step instructions to build a wireless sensor network using the **gsGateway** and **gsSensor** sketches.
 
 ## Constructor ##
 
@@ -109,6 +109,20 @@ else
 {
     Serial.println("Could not send data");
 }
+```
+###mcuReset(uint32_t dly)
+#####Description
+Resets the microcontroller after a given number of milliseconds. The minimum is 4 seconds (4000 ms). If a number less than 4000 is given, the delay will be approximately 4 seconds.
+#####Syntax
+`myGS.mcuReset(dly);`
+#####Parameters
+**dly:** Delay in milliseconds before reset *(unsigned long)*.
+
+#####Returns
+None.
+#####Example
+```c++
+myGS.resetMCU(60000);		//reset after a minute
 ```
 ###ipToText(char* dest, IPAddress ip)
 #####Description
