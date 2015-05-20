@@ -30,6 +30,7 @@ public:
     void begin(void);
     ethernetStatus_t send(const char* compID, const char* data);
     ethernetStatus_t run(void);
+    void mcuReset(uint32_t dly = 0 );
     void ipToText(char* dest, IPAddress ip);
 
     IPAddress serverIP;
@@ -50,7 +51,6 @@ public:
 private:
     ethernetStatus_t _xmit(void);
     int dnsLookup(const char* hostname, IPAddress& addr);
-    void mcuReset(void);
 
     char _localIP[16];
     char _groveStreamsIP[16];

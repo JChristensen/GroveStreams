@@ -42,7 +42,7 @@ ethernetStatus_t GroveStreams::run(void)
     ethernetStatus_t ret = NO_STATUS;
     const char httpOKText[] = "HTTP/1.1 200 OK";
     static char statusBuf[sizeof(httpOKText)];
-    
+
     if ( nError >= MAX_ERROR )
     {
         Serial << millis() << F(" too many network errors\n");
@@ -230,8 +230,9 @@ int GroveStreams::dnsLookup(const char* hostname, IPAddress& addr)
 }
 
 //reset the mcu
-void GroveStreams::mcuReset(void)
+void GroveStreams::mcuReset(uint32_t dly)
 {
+    if ( dly > 4000 ) delay(dly - 4000);
     Serial << millis() << F(" Reset in");
     wdt_enable(WDTO_4S);
     int countdown = 4;
@@ -241,6 +242,7 @@ void GroveStreams::mcuReset(void)
         delay(1000);
     }
 }
+
 
 ethernetPacket::ethernetPacket(void)
 {

@@ -58,20 +58,16 @@ void setup(void)
     Serial << F( "\n" __FILE__ " " __DATE__ " " __TIME__ "\n" );
     delay(500);                          //allow some time for the ethernet chip to boot up
 
-    //start Ethernet, display IP
-    Ethernet.begin(macAddr);             //DHCP
-    Serial << millis() << F(" Ethernet started ") << Ethernet.localIP() << endl;
-    GS.begin();                          //connect to GroveStreams
-
     //initialization state machine establishes communication with the XBee and
     //ensures that it is associated.
     enum INIT_STATES_t
-    { 
+    {
         GET_NODE_ID, CHECK_ASSOC, WAIT_ASSOC, MCU_RESET, INIT_COMPLETE
     };
     INIT_STATES_t INIT_STATE = GET_NODE_ID;
 
-    while ( INIT_STATE != INIT_COMPLETE ) {
+    while ( INIT_STATE != INIT_COMPLETE )
+    {
         uint32_t stateTimer;
 
         switch ( INIT_STATE )
@@ -132,16 +128,28 @@ void setup(void)
         case MCU_RESET:                            //wait a minute, then reset the MCU
             Serial.flush();
             digitalWrite(WAIT_LED, HIGH);
-            xb.mcuReset(60);
+            GS.mcuReset(60000);
             break;
         }
-    }    
+    }
+
+    //start Ethernet, display IP
+    if ( !Ethernet.begin(macAddr) )                //DHCP
+    {
+        Serial << millis() << F(" DHCP fail, reset in 60 seconds...\n");
+        Serial.flush();
+        digitalWrite(WAIT_LED, HIGH);
+        GS.mcuReset(60000);
+    }
+    Serial << millis() << F(" Ethernet started ") << Ethernet.localIP() << endl;
+
+    GS.begin();                                    //connect to GroveStreams
 }
 
 void loop(void)
 {
     enum STATES_t
-    { 
+    {
         GS_HELLO, GS_INIT, RUN
     };
     static STATES_t STATE = GS_HELLO;
@@ -185,7 +193,7 @@ void loop(void)
         }
         else if ( millis() - msSend >= 10000 ) {
             Serial << millis() << F(" GroveStreams send fail, resetting MCU\n");
-            xb.mcuReset(60);
+            GS.mcuReset(60000);
         }
         break;
 
@@ -224,4 +232,3 @@ void loop(void)
         digitalWrite(HB_LED, hbState = !hbState);
     }
 }
-

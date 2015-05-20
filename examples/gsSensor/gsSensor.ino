@@ -77,7 +77,7 @@ void setup(void)
                     Serial << millis() << F(" The XBee did not respond\n");
                 }
                 else
-                {            
+                {
                     INIT_STATE = CHECK_ASSOC;
                 }
             }
