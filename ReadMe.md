@@ -35,7 +35,7 @@ See my [blog post](http://adventuresinarduinoland.blogspot.com/2015/05/a-grovest
 #####Description
 Instantiates a GroveStreams object.
 #####Syntax
-`GroveStreams GS(const char\* serverName, const __FlashStringHelper\* apiKey, int ledPin);`
+`GroveStreams GS(serverName, apiKey, ledPin);`
 #####Parameters
 **serverName** A zero-terminated char array containing the address of the GroveStreams server _(char\*)_.
 
