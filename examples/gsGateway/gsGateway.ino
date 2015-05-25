@@ -28,11 +28,10 @@
 #include <gsXBee.h>                 //http://github.com/JChristensen/gsXBee
 
 //installation-specific variables that WILL need to be changed
-PROGMEM const char gsApiKey[] = "Put *YOUR* GroveStreams API key here";
+PROGMEM const char gsApiKey[] = "Put *YOUR* GroveStreams API Key Here";
 uint8_t macAddr[6] = { 0, 2, 0, 0, 0, 0x42 };   //Put YOUR MAC address here
 
 //other global variables
-const uint32_t ASSOC_TIMEOUT(60000);            //milliseconds to wait for XBee to associate
 const uint32_t DHCP_RENEW_INTERVAL(3600);       //how often to renew our IP address, in seconds
 const char* gsServer = "grovestreams.com";
 
@@ -49,89 +48,15 @@ gsXBee xb;
 
 void setup(void)
 {
-    xb.begin(BAUD_RATE);                 //also does Serial.begin()
     pinMode(SD_CARD, OUTPUT);
-    digitalWrite(SD_CARD, HIGH);         //de-select the SD card
     pinMode(HB_LED, OUTPUT);
-    digitalWrite(HB_LED, HIGH);          //HB LED on during initialization
     pinMode(WAIT_LED, OUTPUT);
+    digitalWrite(SD_CARD, HIGH);         //de-select the SD card
+    digitalWrite(HB_LED, HIGH);          //HB LED on during initialization
+    Serial.begin(BAUD_RATE);
     Serial << F( "\n" __FILE__ " " __DATE__ " " __TIME__ "\n" );
-    delay(500);                          //allow some time for the ethernet chip to boot up
-
-    //initialization state machine establishes communication with the XBee and
-    //ensures that it is associated.
-    enum INIT_STATES_t
-    {
-        GET_NODE_ID, CHECK_ASSOC, WAIT_ASSOC, MCU_RESET, INIT_COMPLETE
-    };
-    INIT_STATES_t INIT_STATE = GET_NODE_ID;
-
-    while ( INIT_STATE != INIT_COMPLETE )
-    {
-        uint32_t stateTimer;
-
-        switch ( INIT_STATE )
-        {
-        case GET_NODE_ID:
-            while ( xb.read() != NO_TRAFFIC );      //handle any incoming traffic
-            {
-                uint8_t cmdNI[] = "NI";             //ask for the node ID
-                xb.sendCommand(cmdNI);
-            }
-            if ( xb.waitFor(NI_CMD_RESPONSE, 100) == READ_TIMEOUT )    //wait for the node ID response
-            {
-                INIT_STATE = MCU_RESET;
-                Serial << millis() << F(" XBee NI fail\n");
-            }
-            else
-            {
-                INIT_STATE = CHECK_ASSOC;
-            }
-            break;
-
-        case CHECK_ASSOC:                          //check the current association state of the XBee
-            {
-                uint8_t cmdAI[] = "AI";            //get the association status
-                xb.sendCommand(cmdAI);
-            }
-            if ( xb.waitFor(AI_CMD_RESPONSE, 100) == READ_TIMEOUT )
-            {
-                INIT_STATE = MCU_RESET;
-                Serial << millis() << F(" XBee AI fail\n");
-            }
-            else if ( xb.assocStatus == 0 )        //currently associated, initialization complete
-            {
-                INIT_STATE = INIT_COMPLETE;
-                digitalWrite(HB_LED, LOW);
-            }
-            else                                   //not currently associated, just wait for it to associate.
-            {
-                INIT_STATE = WAIT_ASSOC;
-                stateTimer = millis();
-            }
-            break;
-
-        case WAIT_ASSOC:                           //wait for the XBee to associate
-            xb.read();
-            if ( xb.assocStatus == 0 )             //zero means associated
-            {
-                INIT_STATE = INIT_COMPLETE;
-                digitalWrite(HB_LED, LOW);
-            }
-            else if (millis() - stateTimer >= ASSOC_TIMEOUT)
-            {
-                INIT_STATE = MCU_RESET;
-                Serial << millis() << F(" XBee associate fail\n");
-            }
-            break;
-
-        case MCU_RESET:                            //wait a minute, then reset the MCU
-            Serial.flush();
-            digitalWrite(WAIT_LED, HIGH);
-            GS.mcuReset(60000);
-            break;
-        }
-    }
+    Serial.flush();
+    xb.begin(BAUD_RATE);
 
     //start Ethernet, display IP
     if ( !Ethernet.begin(macAddr) )                //DHCP
@@ -142,8 +67,8 @@ void setup(void)
         GS.mcuReset(60000);
     }
     Serial << millis() << F(" Ethernet started ") << Ethernet.localIP() << endl;
-
     GS.begin();                                    //connect to GroveStreams
+    digitalWrite(HB_LED, LOW);
 }
 
 void loop(void)
@@ -162,15 +87,16 @@ void loop(void)
         itoa(xb.rss, rss, 10);
         strcat(xb.payload, "&rss=");
         strcat(xb.payload, rss);
-        Serial << millis() << F(" XB RX ") << xb.payload << endl;
+        Serial << endl << millis();
         if ( GS.send(xb.sendingCompID, xb.payload) == SEND_ACCEPTED )
         {
-            Serial << F("Post OK\n");
+            Serial << F(" Post OK ");
         }
         else
         {
-            Serial << F("Post FAIL\n");
+            Serial << F(" Post FAIL ");
         }
+        Serial << xb.payload << endl;
     }
 
     ethernetStatus_t gsStatus = GS.run();          //run the GroveStreams state machine
@@ -232,3 +158,4 @@ void loop(void)
         digitalWrite(HB_LED, hbState = !hbState);
     }
 }
+

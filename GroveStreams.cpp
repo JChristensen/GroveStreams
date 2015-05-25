@@ -143,7 +143,7 @@ ethernetStatus_t GroveStreams::run(void)
         _msDisconnected = millis();
         respTime = _msLastPacket - _msPutComplete;
         discTime = _msDisconnected - _msDisconnecting;
-        Serial << _msDisconnected << F(" disconnected\n");
+        Serial << _msDisconnected << F(" disconnected\n\n");
         GS_STATE = GS_WAIT;
         ret = DISCONNECTED;
         break;

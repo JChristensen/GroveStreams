@@ -24,11 +24,6 @@
 #include <XBee.h>                   //http://github.com/andrewrapp/xbee-arduino
 #include <gsXBee.h>                 //http://github.com/JChristensen/gsXBee
 
-//the following macro forces the XBee to disassociate and reassociate after a
-//reset. comment this line out if this is not desired.
-//forcing disassociation will lengthen startup time a bit.
-#define FORCE_DISASSOCIATE
-
 //pin assignments
 const uint8_t HB_LED(6);                 //heartbeat LED
 const uint8_t WAIT_LED(7);               //waiting for XBee to ack transmitted data
@@ -37,109 +32,20 @@ const uint8_t TMP36(A0);                 //TMP36 temperature sensor
 //other constants
 const uint32_t XBEE_TIMEOUT(10000);      //ms to wait for ack
 const uint32_t HB_INTERVAL(1000);        //heartbeat LED interval, ms
-const uint32_t ASSOC_TIMEOUT(60000);     //milliseconds to wait for XBee to associate
-const uint32_t RESET_DELAY(60000);       //milliseconds to wait before resetting MCU
 const int32_t BAUD_RATE(115200);
 
 gsXBee xb;                               //the XBee
 
 void setup(void)
 {
-    xb.begin(BAUD_RATE);                 //also does Serial.begin()
     pinMode(HB_LED, OUTPUT);
-    digitalWrite(HB_LED, HIGH);          //HB LED on during initialization
     pinMode(WAIT_LED, OUTPUT);
+    digitalWrite(HB_LED, HIGH);          //HB LED on during initialization
+    Serial.begin(BAUD_RATE);
     Serial << F( "\n" __FILE__ " " __DATE__ " " __TIME__ "\n" );
-    delay(500);                          //give the XBee time to initialize
-
-    //initialization state machine establishes communication with the XBee and
-    //ensures that it is associated.
-    enum INIT_STATES_t        //state machine states
-    {
-        GET_NI, CHECK_ASSOC, WAIT_DISASSOC, WAIT_ASSOC, INIT_COMPLETE, MCU_RESET
-    };
-    INIT_STATES_t INIT_STATE = GET_NI;
-
-    while ( INIT_STATE != INIT_COMPLETE )
-    {
-        uint32_t stateTimer;
-
-        switch (INIT_STATE)
-        {
-        case GET_NI:
-            while ( xb.read() != NO_TRAFFIC );      //handle any incoming traffic
-            {
-                uint8_t cmd[] = "NI";           //ask for the node ID
-                xb.sendCommand(cmd);
-                if ( xb.waitFor(NI_CMD_RESPONSE, 1000) == READ_TIMEOUT )
-                {
-                    INIT_STATE = MCU_RESET;
-                    Serial << millis() << F(" The XBee did not respond\n");
-                }
-                else
-                {
-                    INIT_STATE = CHECK_ASSOC;
-                }
-            }
-            break;
-
-        case CHECK_ASSOC:
-            {
-                uint8_t cmd[] = "AI";           //ask for association indicator
-                xb.sendCommand(cmd);
-            }
-            if ( xb.waitFor(AI_CMD_RESPONSE, 1000) == READ_TIMEOUT )
-            {
-                INIT_STATE = MCU_RESET;
-                Serial << millis() << F(" XBee AI fail\n");
-            }
-            else if ( xb.assocStatus == 0 )    //zero means associated
-            {
-                uint8_t cmd[] = "DA";          //force disassociation
-                xb.sendCommand(cmd);
-                stateTimer = millis();
-                INIT_STATE = WAIT_DISASSOC;
-            }
-            else
-            {
-                stateTimer = millis();
-                INIT_STATE = WAIT_ASSOC;        //already disassociated, just wait for associate
-            }
-            break;
-
-        case WAIT_DISASSOC:                     //wait for the XBee to disassociate
-            xb.read();
-            if (xb.assocStatus != 0) {          //zero means associated
-                INIT_STATE = WAIT_ASSOC;
-                stateTimer = millis();
-            }
-            else if (millis() - stateTimer >= ASSOC_TIMEOUT) {
-                INIT_STATE = MCU_RESET;
-                Serial << millis() << F(" XBee DA timeout\n");
-            }
-            break;
-
-        case WAIT_ASSOC:                        //wait for the XBee to associate
-            xb.read();
-            if ( xb.assocStatus == 0 ) {        //zero means associated
-                INIT_STATE = INIT_COMPLETE;
-                digitalWrite(HB_LED, LOW);
-                xb.disassocReset = true;        //any further disassociations are unexpected
-                stateTimer = millis();
-            }
-            else if (millis() - stateTimer >= ASSOC_TIMEOUT) {
-                INIT_STATE = MCU_RESET;
-                Serial << millis() << F(" XBee associate fail\n");
-            }
-            break;
-
-        case MCU_RESET:    //wait a minute, then reset the MCU
-            Serial.flush();
-            digitalWrite(WAIT_LED, HIGH);
-            xb.mcuReset(RESET_DELAY);
-            break;
-        }
-    }
+    Serial.flush();
+    xb.begin(BAUD_RATE);
+    digitalWrite(HB_LED, LOW);
 }
 
 void loop(void)
@@ -150,7 +56,7 @@ void loop(void)
     };
     static STATES_t STATE = WAIT_SEND;
 
-    static uint32_t msTX;                   //time data sent via the XBee
+    static uint32_t msTX;                   //time data was sent via the XBee
     xbeeReadStatus_t xbStatus = xb.read();  //check for incoming XBee traffic
 
     switch (STATE)
