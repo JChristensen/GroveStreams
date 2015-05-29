@@ -4,7 +4,21 @@
  * wireless sensor network. Forwards data sent from sensor nodes via    *
  * an XBee ZB network to the GroveStreams web site.                     *
  *                                                                      *
+ * GroveStreams limits PUTs to one every 10 seconds, but this is        *
+ * averaged over a two-minute period. If multiple sensors send data     *
+ * to the gateway asynchronously, it's possible for two or more         *
+ * messages to arrive in a short interval. This sketch contains retry   *
+ * code to address this situation by retrying a failed call to the      *
+ * to GroveStreams.send() function. This works for the occasional       *
+ * collision, but if more than a very few sensors are feeding the       *
+ * gateway, some mechanism of synchronizing and spacing data            *
+ * transmissions would be preferable. The retry mechanism also relies   *
+ * somewhat on the XBee's ability to buffer messages, which is limited  *
+ * by the internal memory available in the XBee, and will vary with     *
+ * message size and frequency.                                          *
+ *                                                                      *
  * v1.0  Developed with Arduino v1.0.6.                                 *
+ * v1.1  Added retry mechanism.                                         *
  *                                                                      *
  * "GroveStreams Web Gateway" by Jack Christensen                       *
  * is licensed under CC BY-SA 4.0,                                      *
@@ -32,19 +46,21 @@ PROGMEM const char gsApiKey[] = "Put *YOUR* GroveStreams API Key Here";
 uint8_t macAddr[6] = { 0, 2, 0, 0, 0, 0x42 };   //Put YOUR MAC address here
 
 //other global variables
-const uint32_t DHCP_RENEW_INTERVAL(3600);       //how often to renew our IP address, in seconds
+const uint32_t DHCP_RENEW_INTERVAL(3600);   //how often to renew our IP address, in seconds
 const char* gsServer = "grovestreams.com";
+const uint32_t RETRY_INTERVAL(200);         //milliseconds between send retries
+const uint8_t MAX_TRIES(10);                //maximum number of times to try send
 
 //pin assignments
-const uint8_t SD_CARD(4);               //slave select signal for the SD card on the Ethernet shield
-const uint8_t HB_LED(6);                //heartbeat LED
-const uint8_t WAIT_LED(7);              //waiting for server response
-const uint32_t HB_INTERVAL(1000);       //heartbeat LED interval, ms
+const uint8_t SD_CARD(4);                   //slave select signal for the SD card on the Ethernet shield
+const uint8_t HB_LED(6);                    //heartbeat LED
+const uint8_t WAIT_LED(7);                  //waiting for server response
+const uint32_t HB_INTERVAL(1000);           //heartbeat LED interval, ms
 const int32_t BAUD_RATE(115200);
 
 //object instantiations
 GroveStreams GS(gsServer, (const __FlashStringHelper*)gsApiKey, WAIT_LED);
-gsXBee xb;
+gsXBee XB;
 
 void setup(void)
 {
@@ -56,7 +72,7 @@ void setup(void)
     Serial.begin(BAUD_RATE);
     Serial << F( "\n" __FILE__ " " __DATE__ " " __TIME__ "\n" );
     Serial.flush();
-    xb.begin(BAUD_RATE);
+    XB.begin(BAUD_RATE);
 
     //start Ethernet, display IP
     if ( !Ethernet.begin(macAddr) )                //DHCP
@@ -68,6 +84,42 @@ void setup(void)
     }
     Serial << millis() << F(" Ethernet started ") << Ethernet.localIP() << endl;
     GS.begin();                                    //connect to GroveStreams
+
+    //send an initial message to GroveStreams to verify communication
+    enum STATES_t
+    {
+        GS_INIT_MSG, GS_INIT_WAIT, GS_INIT_COMPLETE
+    };
+    static STATES_t STATE = GS_INIT_MSG;
+
+    while ( STATE != GS_INIT_COMPLETE )
+    {
+        ethernetStatus_t gsStatus = GS.run();          //run the GroveStreams state machine
+
+        switch ( STATE )
+        {
+            uint32_t msSend;
+
+        case GS_INIT_MSG:                              //send a message to GroveStreams to say we've reset
+            STATE = GS_INIT_WAIT;
+            msSend = millis();
+            GS.send(XB.compID, "&msg=MCU%20reset");
+            break;
+
+        case GS_INIT_WAIT:
+            if (gsStatus == HTTP_OK) {
+                Serial << millis() << F(" GroveStreams init complete\n");
+                STATE = GS_INIT_COMPLETE;
+            }
+            else if ( millis() - msSend >= 10000 ) {
+                Serial << millis() << F(" GroveStreams init fail, resetting MCU\n");
+                GS.mcuReset(60000);
+            }
+            break;
+        }
+    }
+
+    wdt_enable(WDTO_8S);                   //guard against network hangs, etc.
     digitalWrite(HB_LED, LOW);
 }
 
@@ -75,77 +127,85 @@ void loop(void)
 {
     enum STATES_t
     {
-        GS_HELLO, GS_INIT, RUN
+        WAIT_INPUT, SEND_RETRY
     };
-    static STATES_t STATE = GS_HELLO;
+    static STATES_t STATE = WAIT_INPUT;
 
     wdt_reset();
-
-    if ( xb.read() == RX_DATA )                    //check for incoming data from the XBee
-    {
-        char rss[8];
-        itoa(xb.rss, rss, 10);
-        strcat(xb.payload, "&rss=");
-        strcat(xb.payload, rss);
-        Serial << endl << millis();
-        if ( GS.send(xb.sendingCompID, xb.payload) == SEND_ACCEPTED )
-        {
-            Serial << F(" Post OK ");
-        }
-        else
-        {
-            Serial << F(" Post FAIL ");
-        }
-        Serial << xb.payload << endl;
-    }
-
     ethernetStatus_t gsStatus = GS.run();          //run the GroveStreams state machine
+    static uint32_t msSend;                        //time of last GS.send
 
     switch ( STATE )
     {
-        uint32_t msSend;
-
-    case GS_HELLO:                                 //send a message to GroveStreams to say we've reset
-        STATE = GS_INIT;
-        msSend = millis();
-        GS.send(xb.compID, "&msg=MCU%20reset");
-        break;
-
-    case GS_INIT:
-        if (gsStatus == HTTP_OK) {
-            Serial << millis() << F(" GS init\n");
-            wdt_enable(WDTO_8S);                   //guard against network hangs, etc.
-            STATE = RUN;
-        }
-        else if ( millis() - msSend >= 10000 ) {
-            Serial << millis() << F(" GroveStreams send fail, resetting MCU\n");
-            GS.mcuReset(60000);
-        }
-        break;
-
-    case RUN:
-        static uint32_t msLast;
-        static uint32_t uptimeSeconds;
-        uint32_t ms = millis();
-
-        //count uptime in seconds, print once per minute
-        if ( ms - msLast >= 1000 )
+    case WAIT_INPUT:                                //wait for incoming data from the XBee
+        if ( XB.read() == RX_DATA )
         {
-            msLast += 1000;
-            if ( ++uptimeSeconds % 60 == 0 )
+            char rss[8];
+            itoa(XB.rss, rss, 10);
+            strcat(XB.payload, "&rss=");
+            strcat(XB.payload, rss);
+            msSend = millis();
+            if ( GS.send(XB.sendingCompID, XB.payload) == SEND_ACCEPTED )
             {
-                Serial << ms << F(" Approx uptime ") << uptimeSeconds/60 << F(" min.") << ' ' << endl;
+                Serial << endl << millis() << F(" Send OK ") << XB.payload << endl;
+            }
+            else
+            {
+                STATE = SEND_RETRY;
+                Serial << endl << millis() << F(" Send FAIL ") << XB.payload << endl;
             }
         }
 
-        //renew DHCP address regularly
-        static uint32_t lastMaintain;
-        if ( uptimeSeconds - lastMaintain >= DHCP_RENEW_INTERVAL )
+        //housekeeping stuff while we're waiting
         {
-            lastMaintain += DHCP_RENEW_INTERVAL;
-            Serial << ms << F(" Ethernet.maintain ") << Ethernet.maintain() << endl;
-        }
+            static uint32_t msLast;
+            static uint32_t uptimeSeconds;
+            static uint32_t lastMaintain;
+            uint32_t ms = millis();
 
+            //count uptime in seconds, print once per minute
+            if ( ms - msLast >= 1000 )
+            {
+                msLast += 1000;
+                if ( ++uptimeSeconds % 60 == 0 )
+                {
+                    Serial << ms << F(" Approx uptime ") << uptimeSeconds/60 << F(" min.") << ' ' << endl;
+                }
+            }
+
+            //renew DHCP address regularly
+            if ( uptimeSeconds - lastMaintain >= DHCP_RENEW_INTERVAL )
+            {
+                lastMaintain += DHCP_RENEW_INTERVAL;
+                Serial << ms << F(" Ethernet.maintain ") << Ethernet.maintain() << endl;
+            }
+        }
+        break;
+
+    //initial call to GS.send() failed. retrying a few times should help if the reason was
+    //that more than one message arrived nearly simultaneously, before the GroveStreams
+    //site could respond to the first PUT.
+    case SEND_RETRY:
+        {
+            static uint8_t retryCount;
+            if ( millis() - msSend >= RETRY_INTERVAL )
+            {
+                msSend = millis();
+                Serial << millis() << F(" Send retry\n");
+                if ( GS.send(XB.sendingCompID, XB.payload) == SEND_ACCEPTED )
+                {
+                    STATE = WAIT_INPUT;
+                    Serial << endl << millis() << F(" Post OK, ") << retryCount + 2 << F(" tries ") << XB.payload << endl;
+                    retryCount = 0;
+                }
+                else if ( ++retryCount >= MAX_TRIES - 1 )
+                {
+                    STATE = WAIT_INPUT;
+                    Serial << endl << millis() << F(" Post FAIL, ") << ++retryCount << F(" tries ") << XB.payload << endl;
+                    retryCount = 0;
+                }
+            }
+        }
         break;
     }
 

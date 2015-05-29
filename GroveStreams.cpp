@@ -167,7 +167,6 @@ ethernetStatus_t GroveStreams::send(const char* compID, const char* data)
     else
     {
         ++sendBusy;
-        ++nError;
         lastStatus = SEND_BUSY;
     }
     return lastStatus;

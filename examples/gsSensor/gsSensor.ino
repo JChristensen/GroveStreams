@@ -27,7 +27,7 @@
 //pin assignments
 const uint8_t HB_LED(6);                 //heartbeat LED
 const uint8_t WAIT_LED(7);               //waiting for XBee to ack transmitted data
-const uint8_t TMP36(A0);                 //TMP36 temperature sensor
+const uint8_t TMP36(A2);                 //TMP36 temperature sensor
 
 //other constants
 const uint32_t XBEE_TIMEOUT(10000);      //ms to wait for ack
