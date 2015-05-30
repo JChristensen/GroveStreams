@@ -72,7 +72,7 @@ void setup(void)
     Serial.begin(BAUD_RATE);
     Serial << F( "\n" __FILE__ " " __DATE__ " " __TIME__ "\n" );
     Serial.flush();
-    XB.begin(BAUD_RATE);
+    XB.begin(Serial);
 
     //start Ethernet, display IP
     if ( !Ethernet.begin(macAddr) )                //DHCP

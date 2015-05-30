@@ -34,7 +34,7 @@ const uint32_t XBEE_TIMEOUT(10000);      //ms to wait for ack
 const uint32_t HB_INTERVAL(1000);        //heartbeat LED interval, ms
 const int32_t BAUD_RATE(115200);
 
-gsXBee xb;                               //the XBee
+gsXBee XB;                               //the XBee
 
 void setup(void)
 {
@@ -44,7 +44,7 @@ void setup(void)
     Serial.begin(BAUD_RATE);
     Serial << F( "\n" __FILE__ " " __DATE__ " " __TIME__ "\n" );
     Serial.flush();
-    xb.begin(BAUD_RATE);
+    XB.begin(Serial);
     digitalWrite(HB_LED, LOW);
 }
 
@@ -57,13 +57,13 @@ void loop(void)
     static STATES_t STATE = WAIT_SEND;
 
     static uint32_t msTX;                   //time data was sent via the XBee
-    xbeeReadStatus_t xbStatus = xb.read();  //check for incoming XBee traffic
+    xbeeReadStatus_t xbStatus = XB.read();  //check for incoming XBee traffic
 
     switch (STATE)
     {
     case WAIT_SEND:
         static uint32_t lastXmit;
-        static uint32_t msTxInterval = xb.txInterval * 60UL * 1000UL;
+        static uint32_t msTxInterval = XB.txInterval * 60UL * 1000UL;
         if (millis() - lastXmit >= msTxInterval)     //time to send data?
         {
             lastXmit += msTxInterval;
@@ -81,7 +81,7 @@ void loop(void)
             sprintf(buf, "&s=%u&C=%i.%i", ++seqNbr, intDegrees, fracDegrees );
             digitalWrite(WAIT_LED, HIGH);
             msTX = millis();
-            xb.sendData(buf);
+            XB.sendData(buf);
             STATE = WAIT_ACK;
         }
         break;
