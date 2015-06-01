@@ -19,7 +19,7 @@ enum ethernetStatus_t
     SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER
 };
 
-const uint8_t MAX_ERROR(5);             //reset mcu after this many errors
+const uint8_t MAX_ERROR(5);             //reset mcu after this many consecutive errors
 const uint32_t RECEIVE_TIMEOUT(8000);   //ms to wait for response from server
 const int serverPort(80);               //http port
 
