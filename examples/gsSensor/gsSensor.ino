@@ -14,15 +14,18 @@
  * Model no. XB24-Z7WIT-004 (XB24-ZB)                                   *
  * Firmware: ZigBee Router API 23A7                                     *
  * All parameters are factory default except:                           *
- *   ID PAN ID       42                                                 *
- *   NI Node ID      TMP36a_00010000                                    *
- *   BD Baud Rate    115200 (7)                                         *
- *   AP API Enable   2                                                  *
+ *   ID PAN ID                     42                                   *
+ *   NI Node ID                    TMP36a_00010000                      *
+ *   BD Baud Rate                  115200 (7)                           *
+ *   AP API Enable                 2                                    *
+ * For networks with end devices that sleep up to 5 minutes, also set:  *
+ *   SN Number of Sleep Periods    0x10                                 *
+ *   SP Sleep Period               0x7D0                                *
  *----------------------------------------------------------------------*/
 
-#include <Streaming.h>              //http://arduiniana.org/libraries/streaming/
-#include <XBee.h>                   //http://github.com/andrewrapp/xbee-arduino
-#include <gsXBee.h>                 //http://github.com/JChristensen/gsXBee
+#include <Streaming.h>                   //http://arduiniana.org/libraries/streaming/
+#include <XBee.h>                        //http://github.com/andrewrapp/xbee-arduino
+#include <gsXBee.h>                      //http://github.com/JChristensen/gsXBee
 
 //pin assignments
 const uint8_t HB_LED(6);                 //heartbeat LED
@@ -30,6 +33,7 @@ const uint8_t WAIT_LED(7);               //waiting for XBee to ack transmitted d
 const uint8_t TMP36(A2);                 //TMP36 temperature sensor
 
 //other constants
+const uint32_t RESET_DELAY(60);          //seconds before resetting the MCU for initialization failures
 const uint32_t XBEE_TIMEOUT(10000);      //ms to wait for ack
 const uint32_t HB_INTERVAL(1000);        //heartbeat LED interval, ms
 const int32_t BAUD_RATE(115200);
@@ -44,7 +48,7 @@ void setup(void)
     Serial.begin(BAUD_RATE);
     Serial << F( "\n" __FILE__ " " __DATE__ " " __TIME__ "\n" );
     Serial.flush();
-    XB.begin(Serial);
+    if ( !XB.begin(Serial) ) XB.mcuReset(RESET_DELAY * 1000UL);    //reset if XBee initialization fails
     digitalWrite(HB_LED, LOW);
 }
 

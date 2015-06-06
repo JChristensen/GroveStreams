@@ -26,6 +26,7 @@ The following example sketches are included with the **GroveStreams** library:
 - **gsAnalog:** A standalone GroveStreams client using an Arduino Uno, Arduino Ethernet Shield, and an analog temperature sensor.
 - **gsGateway:** A data concentrator/web gateway node for an XBee ZB wireless sensor network. Use with the **gsSensor** example sketch.
 - **gsSensor:** A wireless sensor node for use with **gsGateway**. Forwards sensor data to the gateway node which relays it to GroveStreams.
+- **aaXBee:** A low-power, battery-operated wireless sensor node for use with **gsGateway**. Forwards sensor data to the gateway node which relays it to GroveStreams. For complete information on the circuit design, including Eagle files, configuration options, programming requirements, etc. see [the GitHub repository](https://github.com/JChristensen/aaXBee_HW).
 
 See my [blog post](http://adventuresinarduinoland.blogspot.com/2015/05/a-grovestreams-wireless-sensor-network.html) for step-by-step instructions to build a wireless sensor network using the **gsGateway** and **gsSensor** sketches.
 

@@ -28,10 +28,13 @@
  * Model no. XB24-Z7WIT-004 (XB24-ZB)                                   *
  * Firmware: ZigBee Coordinator API 21A7                                *
  * All parameters are factory default except:                           *
- *   ID PAN ID       42                                                 *
- *   NI Node ID      Coord_00010000                                     *
- *   BD Baud Rate    115200 (7)                                         *
- *   AP API Enable   2                                                  *
+ *   ID PAN ID                     42                                   *
+ *   NI Node ID                    Coord_00010000                       *
+ *   BD Baud Rate                  115200 (7)                           *
+ *   AP API Enable                 2                                    *
+ * For networks with end devices that sleep up to 5 minutes, also set:  *
+ *   SN Number of Sleep Periods    0x10                                 *
+ *   SP Sleep Period               0x7D0                                *
  *----------------------------------------------------------------------*/
 
 #include <Ethernet.h>
@@ -46,8 +49,10 @@ PROGMEM const char gsApiKey[] = "Put *YOUR* GroveStreams API Key Here";
 uint8_t macAddr[6] = { 0, 2, 0, 0, 0, 0x42 };   //Put YOUR MAC address here
 
 //other global variables
-const uint32_t DHCP_RENEW_INTERVAL(3600);   //how often to renew our IP address, in seconds
 const char* gsServer = "grovestreams.com";
+const uint32_t RESET_DELAY(60);             //seconds before resetting the MCU for initialization failures
+const uint32_t GS_INIT_TIMEOUT(10000);      //milliseconds to wait for GroveStreams response to initial message
+const uint32_t DHCP_RENEW_INTERVAL(3600);   //how often to renew our IP address, in seconds
 const uint32_t RETRY_INTERVAL(200);         //milliseconds between send retries
 const uint8_t MAX_TRIES(10);                //maximum number of times to try send
 
@@ -72,15 +77,15 @@ void setup(void)
     Serial.begin(BAUD_RATE);
     Serial << F( "\n" __FILE__ " " __DATE__ " " __TIME__ "\n" );
     Serial.flush();
-    XB.begin(Serial);
+    if ( !XB.begin(Serial) ) XB.mcuReset(RESET_DELAY * 1000UL);    //reset if XBee initialization fails
 
     //start Ethernet, display IP
     if ( !Ethernet.begin(macAddr) )                //DHCP
     {
-        Serial << millis() << F(" DHCP fail, reset in 60 seconds...\n");
+        Serial << millis() << F(" DHCP fail\n");
         Serial.flush();
         digitalWrite(WAIT_LED, HIGH);
-        GS.mcuReset(60000);
+        GS.mcuReset(RESET_DELAY * 1000UL);
     }
     Serial << millis() << F(" Ethernet started ") << Ethernet.localIP() << endl;
     GS.begin();                                    //connect to GroveStreams
@@ -98,7 +103,7 @@ void setup(void)
 
         switch ( STATE )
         {
-            uint32_t msSend;
+        uint32_t msSend;
 
         case GS_INIT_MSG:                              //send a message to GroveStreams to say we've reset
             STATE = GS_INIT_WAIT;
@@ -111,10 +116,13 @@ void setup(void)
                 Serial << millis() << F(" GroveStreams init complete\n");
                 STATE = GS_INIT_COMPLETE;
             }
-            else if ( millis() - msSend >= 10000 ) {
+            else if ( millis() - msSend >= GS_INIT_TIMEOUT ) {
                 Serial << millis() << F(" GroveStreams init fail, resetting MCU\n");
-                GS.mcuReset(60000);
+                GS.mcuReset(RESET_DELAY * 1000UL);
             }
+            break;
+            
+        case GS_INIT_COMPLETE:
             break;
         }
     }
