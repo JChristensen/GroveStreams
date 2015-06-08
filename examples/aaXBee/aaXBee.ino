@@ -1,6 +1,9 @@
 /*-----------------------------------------------------------------------------*
  * Double-A XBee Sensor Node for GroveStreams Wireless Sensor Network.         *
  * A low-power Arduino-based wireless sensor node than runs on two AA cells.   *
+ * For complete information on the circuit design, including Eagle files,      *
+ * configuration options, programming requirements, etc. see the GitHub        *
+ * repository: http://github.com/JChristensen/aaXBee_HW                        *
  * Jack Christensen Jun 2015                                                   *
  *                                                                             *
  * This basic sketch sends a sequence number, the temperature from the         *
