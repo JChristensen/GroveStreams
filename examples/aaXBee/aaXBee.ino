@@ -34,6 +34,7 @@
 //  SM Sleep Mode   Pin Hibernate [1]
 //  D5 DIO5 Config  0 (disables ASSOC LED)
 //  P0 PIO10 Config 0 (disables RSSI LED)
+//  PO Polling Rate 1 (poll the parent device faster so we can sleep sooner)
 //
 //Because this node sleeps for relatively long intervals, parent devices
 //in the network need their child poll timeout set long enough to maintain
@@ -72,7 +73,7 @@ void wdt_init(void)
 
 void setup(void)
 {
-    Circuit.begin();
+    Circuit.begin( F(__FILE__) );
 }
 
 void loop(void)
@@ -97,10 +98,6 @@ void loop(void)
             RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
             RTC.alarm(ALARM_1);                   //clear RTC interrupt flag
             RTC.alarmInterrupt(ALARM_1, true);    //enable alarm interrupts
-            Serial << millis() << ' ';
-            printDateTime(rtcTime, false);
-            Serial << F(" Alarm set to ");
-            printDateTime(alarmTime);
 
             EICRA = _BV(ISC11);               //interrupt on falling edge
             EIFR = _BV(INTF1);                //clear the interrupt flag (setting ISCnn can cause an interrupt)
@@ -162,6 +159,7 @@ void loop(void)
         
     case SET_ALARM:                               //calculate and set the next alarm
         while ( XB.read() != NO_TRAFFIC );        //get any other traffic
+        Circuit.xbeeEnable(false);                //done with the XBee, put it to sleep
         {
             rtcTime = RTC.get();
             time_t alarmTime = rtcTime - rtcTime % (XB.txInterval * 60) + XB.txOffset * 60 + XB.txSec - XB.txWarmup;
@@ -169,10 +167,6 @@ void loop(void)
             RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
             RTC.alarm(ALARM_1);                   //clear RTC interrupt flag
             RTC.alarmInterrupt(ALARM_1, true);    //enable alarm interrupts
-            Serial << millis() << ' ';
-            printDateTime(rtcTime, false);
-            Serial << F(" Alarm set to ");
-            printDateTime(alarmTime);
         }
         STATE = SEND_DATA;
         break;

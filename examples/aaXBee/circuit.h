@@ -39,7 +39,7 @@ private:
 
 public:
     circuit();
-    void begin(void);
+    void begin(const __FlashStringHelper* fileName);
     void gotoSleep(bool enableRegulator = false);
     void systemClock(clockSpeed_t clkpr);
     void xbeeEnable(boolean enable);
@@ -57,7 +57,7 @@ circuit::circuit()
 {
 }
 
-void circuit::begin(void)
+void circuit::begin(const __FlashStringHelper* fileName)
 {
     const uint8_t pinModes[] = {        //initial pin configuration
         INPUT,           //0   PD0  RXD
@@ -89,13 +89,13 @@ void circuit::begin(void)
     systemClock(CLOCK_8MHZ);
     peripPower(true);                             //peripheral power on
     mcp9808.begin(twiClock400kHz);
-    xbeeEnable(true);
     Serial.begin(BAUD_RATE);
+    Serial << endl << F("Double-A XBee Sensor Node\n");
+    Serial << fileName << F(" " __DATE__ " " __TIME__ "\n");
+    xbeeEnable(true);
 
     //rtc initialization
     time_t rtcTime = RTC.get();
-    Serial << endl << F("Double-A XBee Sensor Node\n");
-    Serial << F(__FILE__ " " __DATE__ " " __TIME__ "\n");
     printDateTime(rtcTime);
     RTC.squareWave(SQWAVE_NONE);                //no square waves please
     RTC.writeRTC( RTC_STATUS, RTC.readRTC(RTC_STATUS) & ~( _BV(BB32KHZ) | _BV(EN32KHZ) ) );   //no 32kHz output either
@@ -191,14 +191,20 @@ void circuit::systemClock(clockSpeed_t clkpr)
 
 void circuit::xbeeEnable(boolean enable)
 {
-    if (enable) {
+    static bool xbeeAwake;      //flag to avoid waking the XBee if already awake, or sleeping it if already sleeping
+    
+    if (enable && !xbeeAwake)
+    {
         digitalWrite(PIN.xbeeSleepRQ, xbeeWake);           //ask the XBee to wake up
         while ( digitalRead(PIN.xbeeCTS) == xbeeWait );    //wait for the XBee to wake up
+        xbeeAwake = true;
         Serial << millis() << F(" XBee wake\n");
     }
-    else {
+    else if ( xbeeAwake )                                  //don't bother if it's already sleeping
+    {
         digitalWrite(PIN.xbeeSleepRQ, xbeeSleep);          //ask the XBee to go to sleep
         while ( digitalRead(PIN.xbeeCTS) == xbeeSend );    //wait for the XBee to sleep
+        xbeeAwake = false;
         Serial << millis() << F(" XBee sleep\n");
     }
 }
