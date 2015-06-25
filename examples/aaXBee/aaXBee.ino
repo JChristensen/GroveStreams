@@ -32,8 +32,8 @@
 //  BD Baud Rate    57600 [6]
 //  AP API Enable   2
 //  SM Sleep Mode   Pin Hibernate [1]
-//  D5 DIO5 Config  0 (disables ASSOC LED)
-//  P0 PIO10 Config 0 (disables RSSI LED)
+//  D5 DIO5 Config  4 (ASSOC LED off)
+//  P0 PIO10 Config 4 (RSSI LED off)
 //  PO Polling Rate 1 (poll the parent device faster so we can sleep sooner)
 //
 //Because this node sleeps for relatively long intervals, parent devices
