@@ -192,7 +192,7 @@ ethernetStatus_t GroveStreams::_xmit(void)
         packet.putChar( F(" HTTP/1.1\nHost: ") );
         packet.putChar(_groveStreamsIP);
         packet.putChar( F("\nConnection: close\nX-Forwarded-For: ") );
-        packet.putChar(_localIP);
+        packet.putChar(_compID);
         packet.putChar( F("\nContent-Type: application/json\n\n") );
         packet.flush();
         _msPutComplete = millis();
