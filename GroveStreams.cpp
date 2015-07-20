@@ -242,7 +242,6 @@ void GroveStreams::mcuReset(uint32_t dly)
     }
 }
 
-
 ethernetPacket::ethernetPacket(void)
 {
     _nchar = 0;
@@ -251,42 +250,42 @@ ethernetPacket::ethernetPacket(void)
 
 void ethernetPacket::putChar(const char* c)
 {
-    if (_nchar > 0)       //if buffer is not empty, back up one character to overlay the previous zero terminator
+    if (_nchar > 0)     //if buffer is not empty, back up one character to overlay the previous zero terminator
     {
         --_nchar;
         --_next;
     }
-    while ( *_next++ = *c++ )              //copy the next character
+    while ( (*_next++ = *c++) )                             //copy the next character
     {
-        if (++_nchar >= PKTSIZE - 1)       //if only one byte left
+        if (++_nchar >= PKTSIZE - 1)                        //if only one byte left
         {
-            *_next++ = 0;                   //put in the terminator
-            ++_nchar;                       //and count it
-            flush();                        //send the buffer
+            *_next++ = 0;                                   //put in the terminator
+            ++_nchar;                                       //and count it
+            flush();                                        //send the buffer
         }
     }
-    ++_nchar;                               //count the terminator
+    ++_nchar;                                               //count the terminator
 }
 
 void ethernetPacket::putChar(const __FlashStringHelper *f)
 {
     const char PROGMEM *c = (const char PROGMEM *)f;
 
-    if (_nchar > 0)         //if buffer is not empty, back up one character to overlay the previous zero terminator
+    if (_nchar > 0)     //if buffer is not empty, back up one character to overlay the previous zero terminator
     {
         --_nchar;
         --_next;
     }
-    while ( *_next++ = pgm_read_byte(c++) ) //copy the next character
+    while ( (*_next++ = pgm_read_byte(c++)) )               //copy the next character
     {
-        if (++_nchar >= PKTSIZE - 1)        //if only one byte left
+        if (++_nchar >= PKTSIZE - 1)                        //if only one byte left
         {
-            *_next++ = 0;                   //put in the terminator
-            ++_nchar;                       //and count it
-            flush();                        //send the buffer
+            *_next++ = 0;                                   //put in the terminator
+            ++_nchar;                                       //and count it
+            flush();                                        //send the buffer
         }
     }
-    ++_nchar;                               //count the terminator
+    ++_nchar;                                               //count the terminator
 }
 
 void ethernetPacket::flush(void)
