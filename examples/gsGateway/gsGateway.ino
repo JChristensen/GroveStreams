@@ -46,7 +46,7 @@
 
 //installation-specific variables that WILL need to be changed
 PROGMEM const char gsApiKey[] = "Put *YOUR* GroveStreams API Key Here";
-uint8_t macAddr[6] = { 0, 2, 0, 0, 0, 0x42 };   //Put YOUR MAC address here
+uint8_t macAddr[6] = { 0x02, 0, 0, 0, 0, 0x42 };   //Put YOUR MAC address here
 
 //other global variables
 const char* gsServer = "grovestreams.com";
