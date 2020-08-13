@@ -14,7 +14,7 @@ _serverName(serverName), _apiKey(apiKey), _ledPin(ledPin)
 }
 
 //Initialize GroveStreams
-void GroveStreams::begin(void)
+void GroveStreams::begin()
 {
     int ret = dnsLookup(_serverName, serverIP);
     if (ret == 1)
@@ -37,7 +37,7 @@ enum gsState_t
 gsState_t GS_STATE;
 
 //GroveStreams state machine
-ethernetStatus_t GroveStreams::run(void)
+ethernetStatus_t GroveStreams::run()
 {
     ethernetStatus_t ret = NO_STATUS;
     const char httpOKText[] = "HTTP/1.1 200 OK";
@@ -173,7 +173,7 @@ ethernetStatus_t GroveStreams::send(const char* compID, const char* data)
 }
 
 //transmit data to GroveStreams
-ethernetStatus_t GroveStreams::_xmit(void)
+ethernetStatus_t GroveStreams::_xmit()
 {
     ethernetPacket packet;
 
@@ -242,7 +242,7 @@ void GroveStreams::mcuReset(uint32_t dly)
     }
 }
 
-ethernetPacket::ethernetPacket(void)
+ethernetPacket::ethernetPacket()
 {
     _nchar = 0;
     _next = _buf;
@@ -269,7 +269,7 @@ void ethernetPacket::putChar(const char* c)
 
 void ethernetPacket::putChar(const __FlashStringHelper *f)
 {
-    const char PROGMEM *c = (const char PROGMEM *)f;
+    const char *c = (const char PROGMEM *)f;
 
     if (_nchar > 0)     //if buffer is not empty, back up one character to overlay the previous zero terminator
     {
@@ -288,7 +288,7 @@ void ethernetPacket::putChar(const __FlashStringHelper *f)
     ++_nchar;                                               //count the terminator
 }
 
-void ethernetPacket::flush(void)
+void ethernetPacket::flush()
 {
     if (_nchar > 0)
     {

@@ -27,9 +27,9 @@ class GroveStreams
 {
 public:
     GroveStreams(const char* serverName, const __FlashStringHelper* apiKey, int ledPin = -1);
-    void begin(void);
+    void begin();
     ethernetStatus_t send(const char* compID, const char* data);
-    ethernetStatus_t run(void);
+    ethernetStatus_t run();
     void mcuReset(uint32_t dly = 0 );
     void ipToText(char* dest, IPAddress ip);
 
@@ -49,7 +49,7 @@ public:
     uint32_t discTime;                  //time to disconnect from server in milliseconds
 
 private:
-    ethernetStatus_t _xmit(void);
+    ethernetStatus_t _xmit();
     int dnsLookup(const char* hostname, IPAddress& addr);
 
     char _localIP[16];
@@ -71,10 +71,10 @@ const uint16_t PKTSIZE(300);
 class ethernetPacket
 {
 public:
-    ethernetPacket(void);
+    ethernetPacket();
     void putChar(const char* c);
     void putChar(const __FlashStringHelper *f);
-    void flush(void);
+    void flush();
 
 private:
     char _buf[PKTSIZE];     //the packet
