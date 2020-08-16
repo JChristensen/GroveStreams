@@ -1,17 +1,9 @@
 // Arduino GroveStreams Library
-//
-// "Arduino GroveStreams Library" by Jack Christensen
-// is licensed under CC BY-SA 4.0,
-// http://creativecommons.org/licenses/by-sa/4.0/
+// https://github.com/JChristensen/GroveStreams
+// Copyright (C) 2015 by Jack Christensen and licensed under
+// GNU GPL v3.0, https://www.gnu.org/licenses/gpl.html
 
 #include <GroveStreams.h>
-EthernetClient client;
-
-//Constructor
-GroveStreams::GroveStreams(const char* serverName, const __FlashStringHelper* apiKey, int ledPin):
-_serverName(serverName), _apiKey(apiKey), _ledPin(ledPin)
-{
-}
 
 //Initialize GroveStreams
 void GroveStreams::begin()
@@ -74,9 +66,9 @@ ethernetStatus_t GroveStreams::run()
         {
             boolean haveStatus = false;
 
-            if(client.connected())
+            if(m_client->connected())
             {
-                uint16_t nChar = client.available();
+                uint16_t nChar = m_client->available();
                 if (nChar > 0)
                 {
                     _msLastPacket = millis();
@@ -84,7 +76,7 @@ ethernetStatus_t GroveStreams::run()
                     char* b = statusBuf;
                     for (uint16_t i = 0; i < nChar; i++)
                     {
-                        char ch = client.read();
+                        char ch = m_client->read();
                         Serial << _BYTE(ch);
                         if ( !haveStatus && i < sizeof(statusBuf) )
                         {
@@ -118,7 +110,7 @@ ethernetStatus_t GroveStreams::run()
                 {
                     _msLastPacket = millis();
                     Serial << endl << _msLastPacket << F(" Recv timeout\n");
-                    client.stop();
+                    m_client->stop();
                     if (_ledPin >= 0) digitalWrite(_ledPin, LOW);
                     GS_STATE = GS_DISCONNECT;
                     ++recvTimeout;
@@ -138,7 +130,7 @@ ethernetStatus_t GroveStreams::run()
         // close client end
         _msDisconnecting = millis();
         Serial << _msDisconnecting << F(" disconnecting\n");
-        client.stop();
+        m_client->stop();
         if (_ledPin >= 0) digitalWrite(_ledPin, LOW);
         _msDisconnected = millis();
         respTime = _msLastPacket - _msPutComplete;
@@ -175,12 +167,12 @@ ethernetStatus_t GroveStreams::send(const char* compID, const char* data)
 //transmit data to GroveStreams
 ethernetStatus_t GroveStreams::_xmit()
 {
-    ethernetPacket packet;
+    ethernetPacket packet(m_client);
 
     _msConnect = millis();
     Serial << _msConnect << F(" connecting\n");
     if (_ledPin >= 0) digitalWrite(_ledPin, HIGH);
-    if ( client.connect(serverIP, serverPort) )
+    if ( m_client->connect(serverIP, serverPort) )
     {
         _msConnected = millis();
         Serial << _msConnected << F(" connected\n");
@@ -242,8 +234,9 @@ void GroveStreams::mcuReset(uint32_t dly)
     }
 }
 
-ethernetPacket::ethernetPacket()
+ethernetPacket::ethernetPacket(Client* client)
 {
+    m_client = client;
     _nchar = 0;
     _next = _buf;
 }
@@ -292,7 +285,7 @@ void ethernetPacket::flush()
 {
     if (_nchar > 0)
     {
-        client << _buf;
+        m_client->print(_buf);
         _nchar = 0;
         _next = _buf;
     }
