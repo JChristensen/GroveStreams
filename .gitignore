@@ -26,4 +26,6 @@
 *.xls
 Thumbs.db
 *.session
+*.geany
+.development
 
