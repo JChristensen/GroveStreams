@@ -16,7 +16,7 @@ void GroveStreams::begin()
     else
     {
         Serial << millis() << F(" GS DNS lookup fail, ret=") << ret << endl;
-        if (!ignoreGS) mcuReset();
+        if (!bypassMode) mcuReset();
     }
     ipToText(_localIP, Ethernet.localIP());
     ipToText(_groveStreamsIP, serverIP);
@@ -149,8 +149,8 @@ ethernetStatus_t GroveStreams::run()
 ethernetStatus_t GroveStreams::send(const char* compID, const char* data)
 {
     ++sendSeq;
-    if (ignoreGS) {
-        Serial << millis() << F(" ignore ") << sendSeq << ' ' << compID << ' ' << data << endl;
+    if (bypassMode) {
+        Serial << millis() << F(" BYPASS ") << sendSeq << ' ' << compID << ' ' << data << endl;
         lastStatus = SEND_ACCEPTED;
     }
     else if (GS_STATE == GS_WAIT) {

@@ -35,7 +35,7 @@ public:
 
     IPAddress serverIP;
     ethernetStatus_t lastStatus;
-    bool ignoreGS{false};
+    bool bypassMode {false};
 
     //web posting stats
     uint16_t httpOK;                    //number of HTTP OK responses received
