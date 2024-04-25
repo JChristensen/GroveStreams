@@ -10,7 +10,7 @@
 #include <avr/wdt.h>
 #include <Dns.h>
 #include <Ethernet.h>
-#include <Streaming.h>              //http://arduiniana.org/libraries/streaming/
+#include <Streaming.h>      // https://github.com/janelia-arduino/Streaming
 
 enum ethernetStatus_t
 {
@@ -18,9 +18,9 @@ enum ethernetStatus_t
     SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER
 };
 
-const uint8_t MAX_ERROR(5);             //reset mcu after this many consecutive errors
-const uint32_t RECEIVE_TIMEOUT(8000);   //ms to wait for response from server
-const int serverPort(80);               //http port
+const uint8_t MAX_ERROR(5);             // reset mcu after this many consecutive errors
+const uint32_t RECEIVE_TIMEOUT(8000);   // ms to wait for response from server
+const int serverPort(80);               // http port
 
 class GroveStreams
 {
@@ -37,17 +37,17 @@ public:
     ethernetStatus_t lastStatus;
     bool bypassMode {false};
 
-    //web posting stats
-    uint16_t httpOK;                    //number of HTTP OK responses received
-    uint8_t nError;                     //error count since last httpOK (SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER)
-    uint16_t sendSeq;                   //number of sends requested
-    uint16_t sendBusy;                  //number of sends rejected
-    uint16_t connFail;                  //number of connection failures
-    uint16_t recvTimeout;               //number of timeouts waiting for server response
-    uint16_t httpOther;                 //number of non-OK HTTP responses received (i.e. not HTTP status 200)
-    uint32_t connTime;                  //time to connect to server in milliseconds
-    uint32_t respTime;                  //response time in milliseconds
-    uint32_t discTime;                  //time to disconnect from server in milliseconds
+    // web posting stats
+    uint16_t httpOK;            // number of HTTP OK responses received
+    uint8_t nError;             // error count since last httpOK (SEND_BUSY, CONNECT_FAILED, TIMEOUT, HTTP_OTHER)
+    uint16_t sendSeq;           // number of sends requested
+    uint16_t sendBusy;          // number of sends rejected
+    uint16_t connFail;          // number of connection failures
+    uint16_t recvTimeout;       // number of timeouts waiting for server response
+    uint16_t httpOther;         // number of non-OK HTTP responses received (i.e. not HTTP status 200)
+    uint32_t connTime;          // time to connect to server in milliseconds
+    uint32_t respTime;          // response time in milliseconds
+    uint32_t discTime;          // time to disconnect from server in milliseconds
 
 private:
     ethernetStatus_t _xmit();
@@ -58,7 +58,7 @@ private:
     char _groveStreamsIP[16];
     const char* _serverName;
     const __FlashStringHelper* _apiKey;
-    const char* _compID;                //component ID
+    const char* _compID;        // component ID
     const char* _data;
     unsigned long _msConnect;
     unsigned long _msConnected;
@@ -80,9 +80,9 @@ public:
 
 private:
     Client* m_client;
-    char _buf[PKTSIZE];     //the packet
-    uint16_t _nchar;        //number of characters in the packet
-    char* _next;            //pointer to the next available position in the packet
+    char _buf[PKTSIZE];     // the packet
+    uint16_t _nchar;        // number of characters in the packet
+    char* _next;            // pointer to the next available position in the packet
 };
 
 #endif
