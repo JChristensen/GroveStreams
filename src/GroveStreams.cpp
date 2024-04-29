@@ -167,11 +167,11 @@ ethernetStatus_t GroveStreams::_xmit()
         packet.putChar( F("&compId=") );
         packet.putChar(_compID);
         packet.putChar(_data);
-        packet.putChar( F(" HTTP/1.1\nHost: ") );
+        packet.putChar( F(" HTTP/1.1\r\nHost: ") );
         packet.putChar(_groveStreamsIP);
-        packet.putChar( F("\nConnection: close\nX-Forwarded-For: ") );
+        packet.putChar( F("\r\nConnection: close\r\nX-Forwarded-For: ") );
         packet.putChar(_compID);
-        packet.putChar( F("\nContent-Type: application/json\n\n") );
+        packet.putChar( F("\r\nContent-Type: application/json\r\n\r\n") );
         packet.flush();
         _msPutComplete = millis();
         Serial << _msPutComplete << F(" PUT complete ") << strlen(_data) << endl;
