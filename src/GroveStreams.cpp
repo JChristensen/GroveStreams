@@ -1,6 +1,6 @@
 // Arduino GroveStreams Library
 // https://github.com/JChristensen/GroveStreams
-// Copyright (C) 2015 by Jack Christensen and licensed under
+// Copyright (C) 2015-2024 by Jack Christensen and licensed under
 // GNU GPL v3.0, https://www.gnu.org/licenses/gpl.html
 
 #include <GroveStreams.h>

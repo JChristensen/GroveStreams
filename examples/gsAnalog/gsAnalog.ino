@@ -1,40 +1,39 @@
-/*----------------------------------------------------------------------*
- * Basic GroveStreams Client                                            *
- * Sends data from an analog temperature sensor to GroveStreams,        *
- * once per minute.                                                     *
- *                                                                      *
- * Before running this sketch, create an account and an Organization    *
- * on GroveStreams. From the start page, click the Organization name    *
- * to go to Observation Studio. Next click on the yellow lock           *
- * "API Keys" icon near the top right. This will open a dialog that     *
- * allows keys to be displayed. Check the box, "Feed Put API Key        *
- * (with auto-registration and request stream rights)", then click      *
- * View Secret Key. Copy the key into the line below that starts        *
- * with PROGMEM const char gsApiKey[].                                  *
- *                                                                      *
- * When the sketch is started, GroveStream will create a component      *
- * called "analog" that has two data streams, "s", a sequence number,   *
- * and "C", temperature in Celsius. After the sketch has run at least   *
- * a minute, refresh the Observation Studio page to see these.          *
- *                                                                      *
- * v1.0  Developed with Arduino v1.0.6.                                 *
- *                                                                      *
- * "Basic GroveStreams Client" by Jack Christensen                      *
- * is licensed under CC BY-SA 4.0,                                      *
- * http://creativecommons.org/licenses/by-sa/4.0/                       *
- *                                                                      *
- * Hardware:                                                            *
- * Arduino Uno                                                          *
- * Arduino Ethernet Shield                                              *
- * TMP36 Temperature sensor                                             *
- * Yellow LED (heartbeat)                                               *
- * Red LED (wait)                                                       *
- *----------------------------------------------------------------------*/
+// Arduino GroveStreams Library
+// https://github.com/JChristensen/GroveStreams
+// Copyright (C) 2015-2024 by Jack Christensen and licensed under
+// GNU GPL v3.0, https://www.gnu.org/licenses/gpl.html
+
+// Example sketch: Basic GroveStreams Client
+// Sends data from an analog temperature sensor to GroveStreams,
+// once per minute.
+//
+// Before running this sketch, create an account and an Organization
+// on GroveStreams. From the start page, click the Organization name
+// to go to Observation Studio. Next click on the yellow lock
+// "API Keys" icon near the top right. This will open a dialog that
+// allows keys to be displayed. Check the box, "Feed Put API Key
+// (with auto-registration and request stream rights)", then click
+// View Secret Key. Copy the key into the line below that starts
+// with PROGMEM const char gsApiKey[].
+//
+// When the sketch is started, GroveStream will create a component
+// called "analog" that has two data streams, "s", a sequence number,
+// and "C", temperature in Celsius. After the sketch has run at least
+// a minute, refresh the Observation Studio page to see these.
+//
+// v1.0  Developed with Arduino v1.0.6, updated for 1.8.19.
+//
+// Hardware:
+//   Arduino Uno
+//   Arduino Ethernet Shield
+//   TMP36 Temperature sensor
+//   Yellow LED (heartbeat)
+//   Red LED (wait)
 
 #include <Ethernet.h>
 #include <SPI.h>
-#include <Streaming.h>              //http://arduiniana.org/libraries/streaming/
-#include <GroveStreams.h>           //http://github.com/JChristensen/GroveStreams
+#include <Streaming.h>      // https://github.com/janelia-arduino/Streaming
+#include <GroveStreams.h>   // https://github.com/JChristensen/GroveStreams
 
 //installation-specific variables that WILL need to be changed
 PROGMEM const char gsApiKey[] = "Put *YOUR* GroveStreams API key here";
@@ -55,9 +54,10 @@ const uint8_t WAIT_LED(7);   //waiting for server response
 const uint8_t TMP36(A2);     //TMP36 temperature sensor (A0 and A1 are used for SD card on Ethernet shield)
 
 //object instantiations
-GroveStreams GS(gsServer, (const __FlashStringHelper*)gsApiKey, WAIT_LED);
+EthernetClient gsClient;
+GroveStreams GS(gsClient, gsServer, (const __FlashStringHelper*)gsApiKey, WAIT_LED);
 
-void setup(void)
+void setup()
 {
     Serial.begin(BAUD_RATE);
     pinMode(SD_CARD, OUTPUT);
@@ -81,7 +81,7 @@ void setup(void)
     wdt_enable(WDTO_8S);                 //guard against network hangs, etc.
 }
 
-void loop(void)
+void loop()
 {
     wdt_reset();
     GS.run();                            //run the GroveStreams state machine

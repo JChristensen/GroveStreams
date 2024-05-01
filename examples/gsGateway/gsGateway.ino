@@ -1,48 +1,47 @@
-/*----------------------------------------------------------------------*
- * GroveStreams Web Gateway                                             *
- * Data concentrator/web gateway node for a GroveStreams-based          *
- * wireless sensor network. Forwards data sent from sensor nodes via    *
- * an XBee ZB network to the GroveStreams web site.                     *
- *                                                                      *
- * GroveStreams limits PUTs to one every 10 seconds, but this is        *
- * averaged over a two-minute period. If multiple sensors send data     *
- * to the gateway asynchronously, it's possible for two or more         *
- * messages to arrive in a short interval. This sketch contains retry   *
- * code to address this situation by retrying a failed call to the      *
- * to GroveStreams.send() function. This works for the occasional       *
- * collision, but if more than a very few sensors are feeding the       *
- * gateway, some mechanism of synchronizing and spacing data            *
- * transmissions would be preferable. The retry mechanism also relies   *
- * somewhat on the XBee's ability to buffer messages, which is limited  *
- * by the internal memory available in the XBee, and will vary with     *
- * message size and frequency.                                          *
- *                                                                      *
- * v1.0  Developed with Arduino v1.0.6.                                 *
- * v1.1  Added retry mechanism.                                         *
- *                                                                      *
- * "GroveStreams Web Gateway" by Jack Christensen                       *
- * is licensed under CC BY-SA 4.0,                                      *
- * http://creativecommons.org/licenses/by-sa/4.0/                       *
- *                                                                      *
- * XBee Configuration                                                   *
- * Model no. XB24-Z7WIT-004 (XB24-ZB)                                   *
- * Firmware: ZigBee Coordinator API 21A7                                *
- * All parameters are factory default except:                           *
- *   ID PAN ID                     42                                   *
- *   NI Node ID                    Coord_00010000                       *
- *   BD Baud Rate                  115200 (7)                           *
- *   AP API Enable                 2                                    *
- * For networks with end devices that sleep up to 5 minutes, also set:  *
- *   SN Number of Sleep Periods    0x10                                 *
- *   SP Sleep Period               0x7D0                                *
- *----------------------------------------------------------------------*/
+// Arduino GroveStreams Library
+// https://github.com/JChristensen/GroveStreams
+// Copyright (C) 2015-2024 by Jack Christensen and licensed under
+// GNU GPL v3.0, https://www.gnu.org/licenses/gpl.html
+
+// Example sketch: GroveStreams Web Gateway
+// Data concentrator/web gateway node for a GroveStreams-based
+// wireless sensor network. Forwards data sent from sensor nodes via
+// an XBee ZB network to the GroveStreams web site.
+//
+// GroveStreams limits PUTs to one every 10 seconds, but this is
+// averaged over a two-minute period. If multiple sensors send data
+// to the gateway asynchronously, it's possible for two or more
+// messages to arrive in a short interval. This sketch contains retry
+// code to address this situation by retrying a failed call to the
+// to GroveStreams.send() function. This works for the occasional
+// collision, but if more than a very few sensors are feeding the
+// gateway, some mechanism of synchronizing and spacing data
+// transmissions would be preferable. The retry mechanism also relies
+// somewhat on the XBee's ability to buffer messages, which is limited
+// by the internal memory available in the XBee, and will vary with
+// message size and frequency.
+//
+// v1.0  Developed with Arduino v1.0.6, updated for 1.8.19
+// v1.1  Added retry mechanism.
+//
+// XBee Configuration
+// Model no. XB24-Z7WIT-004 (XB24-ZB)
+// Firmware: ZigBee Coordinator API 21A7
+// All parameters are factory default except:
+//   ID PAN ID                     42
+//   NI Node ID                    Coord_00010000
+//   BD Baud Rate                  115200 (7)
+//   AP API Enable                 2
+// For networks with end devices that sleep up to 5 minutes, also set:
+//   SN Number of Sleep Periods    0x10
+//   SP Sleep Period               0x7D0
 
 #include <Ethernet.h>
 #include <SPI.h>
-#include <Streaming.h>              //http://arduiniana.org/libraries/streaming/
-#include <XBee.h>                   //http://github.com/andrewrapp/xbee-arduino
-#include <GroveStreams.h>           //http://github.com/JChristensen/GroveStreams
-#include <gsXBee.h>                 //http://github.com/JChristensen/gsXBee
+#include <Streaming.h>          // https://github.com/janelia-arduino/Streaming
+#include <XBee.h>               // https://github.com/andrewrapp/xbee-arduino
+#include <GroveStreams.h>       // https://github.com/JChristensen/GroveStreams
+#include <gsXBee.h>             // https://github.com/JChristensen/gsXBee
 
 //installation-specific variables that WILL need to be changed
 PROGMEM const char gsApiKey[] = "Put *YOUR* GroveStreams API Key Here";
@@ -64,10 +63,11 @@ const uint32_t HB_INTERVAL(1000);           //heartbeat LED interval, ms
 const int32_t BAUD_RATE(115200);
 
 //object instantiations
-GroveStreams GS(gsServer, (const __FlashStringHelper*)gsApiKey, WAIT_LED);
+EthernetClient gsClient;
+GroveStreams GS(gsClient, gsServer, (const __FlashStringHelper*)gsApiKey, WAIT_LED);
 gsXBee XB;
 
-void setup(void)
+void setup()
 {
     pinMode(SD_CARD, OUTPUT);
     pinMode(HB_LED, OUTPUT);
@@ -121,7 +121,7 @@ void setup(void)
                 GS.mcuReset(RESET_DELAY * 1000UL);
             }
             break;
-            
+
         case GS_INIT_COMPLETE:
             break;
         }
@@ -131,7 +131,7 @@ void setup(void)
     digitalWrite(HB_LED, LOW);
 }
 
-void loop(void)
+void loop()
 {
     enum STATES_t
     {
@@ -140,8 +140,8 @@ void loop(void)
     static STATES_t STATE = WAIT_INPUT;
 
     wdt_reset();
-    ethernetStatus_t gsStatus = GS.run();          //run the GroveStreams state machine
-    static uint32_t msSend;                        //time of last GS.send
+    GS.run();                   // run the GroveStreams state machine
+    static uint32_t msSend;     // time of last GS.send
 
     switch ( STATE )
     {
@@ -226,4 +226,3 @@ void loop(void)
         digitalWrite(HB_LED, hbState = !hbState);
     }
 }
-

@@ -1,31 +1,30 @@
-/*----------------------------------------------------------------------*
- * GroveStreams Sensor Node                                             *
- * Sensor node for a GroveStreams-based wireless sensor network.        *
- * Transmits sensor data via an XBee ZB network to the web              *
- * gateway node.                                                        *
- *                                                                      *
- * v1.0  Developed with Arduino v1.0.6.                                 *
- *                                                                      *
- * "GroveStreams Sensor Node" by Jack Christensen                       *
-*  is licensed under CC BY-SA 4.0,                                      *
- * http://creativecommons.org/licenses/by-sa/4.0/                       *
- *                                                                      *
- * XBee Configuration                                                   *
- * Model no. XB24-Z7WIT-004 (XB24-ZB)                                   *
- * Firmware: ZigBee Router API 23A7                                     *
- * All parameters are factory default except:                           *
- *   ID PAN ID                     42                                   *
- *   NI Node ID                    TMP36a_00010000                      *
- *   BD Baud Rate                  115200 (7)                           *
- *   AP API Enable                 2                                    *
- * For networks with end devices that sleep up to 5 minutes, also set:  *
- *   SN Number of Sleep Periods    0x10                                 *
- *   SP Sleep Period               0x7D0                                *
- *----------------------------------------------------------------------*/
+// Arduino GroveStreams Library
+// https://github.com/JChristensen/GroveStreams
+// Copyright (C) 2015-2024 by Jack Christensen and licensed under
+// GNU GPL v3.0, https://www.gnu.org/licenses/gpl.html
 
-#include <Streaming.h>                   //http://arduiniana.org/libraries/streaming/
-#include <XBee.h>                        //http://github.com/andrewrapp/xbee-arduino
-#include <gsXBee.h>                      //http://github.com/JChristensen/gsXBee
+// Example sketch: GroveStreams Sensor Node
+// Sensor node for a GroveStreams-based wireless sensor network.
+// Transmits sensor data via an XBee ZB network to the web
+// gateway node.
+//
+// v1.0  Developed with Arduino v1.0.6, updated for 1.8.19.
+//
+// XBee Configuration
+// Model no. XB24-Z7WIT-004 (XB24-ZB)
+// Firmware: ZigBee Router API 23A7
+// All parameters are factory default except:
+//   ID PAN ID                     42
+//   NI Node ID                    TMP36a_00010000
+//   BD Baud Rate                  115200 (7)
+//   AP API Enable                 2
+// For networks with end devices that sleep up to 5 minutes, also set:
+//   SN Number of Sleep Periods    0x10
+//   SP Sleep Period               0x7D0
+
+#include <Streaming.h>                   // https://github.com/janelia-arduino/Streaming
+#include <XBee.h>                        // https://github.com/andrewrapp/xbee-arduino
+#include <gsXBee.h>                      // https://github.com/JChristensen/gsXBee
 
 //pin assignments
 const uint8_t HB_LED(6);                 //heartbeat LED
@@ -40,7 +39,7 @@ const int32_t BAUD_RATE(115200);
 
 gsXBee XB;                               //the XBee
 
-void setup(void)
+void setup()
 {
     pinMode(HB_LED, OUTPUT);
     pinMode(WAIT_LED, OUTPUT);
@@ -52,7 +51,7 @@ void setup(void)
     digitalWrite(HB_LED, LOW);
 }
 
-void loop(void)
+void loop()
 {
     enum STATES_t        //state machine states
     {
@@ -122,4 +121,3 @@ long readTMP36(int muxChannel)
     long uV = (analogRead(muxChannel) * 5000000L + 512) / 1024;    //microvolts from the TMP36 sensor
     return (uV - 500000 + 50) / 100;
 }
-

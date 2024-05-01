@@ -1,13 +1,17 @@
-//The Circuit object represents the hardware pin assignments and has functions
-//to control hardware features.
-//
-//Double-A XBee Sensor Node by Jack Christensen is licensed under
-//CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/
+// Arduino GroveStreams Library
+// https://github.com/JChristensen/GroveStreams
+// Copyright (C) 2015-2024 by Jack Christensen and licensed under
+// GNU GPL v3.0, https://www.gnu.org/licenses/gpl.html
+// Example sketch: Double-A XBee Sensor Node for GroveStreams.
+
+// The Circuit object represents the hardware pin assignments and has functions
+// to control hardware features.
 
 const long BAUD_RATE(57600);
 const uint32_t SLEEP_BEFORE_RESET(900);   //seconds to sleep before resetting the MCU if XBee initialization fails
 gsXBee XB;                                //the XBee
 MCP9808 mcp9808(0);                       //MCP9808 temperature sensor
+DS3232RTC RTC;
 
 //pin assignments
 const struct pins_t
@@ -19,7 +23,7 @@ const struct pins_t
     uint8_t xbeeSleepRQ;            //high to sleep, low to wake
     uint8_t builtinLED;
     uint8_t sensorPower;
-} 
+}
 PIN = { 2, 3, 4, 5, 6, 8, 9 };
 
 #define xbeeSleep HIGH
@@ -28,7 +32,7 @@ PIN = { 2, 3, 4, 5, 6, 8, 9 };
 #define xbeeWait HIGH
 
 //MCU system clock prescaler values, used to set CLKPS[3:0]
-enum clockSpeed_t { CLOCK_8MHZ = 0, CLOCK_1MHZ = 3 };    
+enum clockSpeed_t { CLOCK_8MHZ = 0, CLOCK_1MHZ = 3 };
 
 //function prototypes
 void printDateTime(time_t t, bool newLine = true);
@@ -42,10 +46,10 @@ public:
     void begin(const __FlashStringHelper* fileName);
     void gotoSleep(bool enableRegulator = false);
     void systemClock(clockSpeed_t clkpr);
-    void xbeeEnable(boolean enable);
+    void xbeeEnable(bool enable);
     void peripPower(bool enable);
-    int readVcc(void);
-    int readBattery(void);
+    int readVcc();
+    int readBattery();
 
     int vBat;       //battery and regulator voltages
     int vReg;
@@ -88,7 +92,7 @@ void circuit::begin(const __FlashStringHelper* fileName)
     }
     systemClock(CLOCK_8MHZ);
     peripPower(true);                             //peripheral power on
-    mcp9808.begin(twiClock400kHz);
+    mcp9808.begin(MCP9808::twiClock400kHz);
     Serial.begin(BAUD_RATE);
     Serial << endl << F("Double-A XBee Sensor Node\n");
     Serial << fileName << F(" " __DATE__ " " __TIME__ "\n");
@@ -97,11 +101,12 @@ void circuit::begin(const __FlashStringHelper* fileName)
     //rtc initialization
     time_t rtcTime = RTC.get();
     printDateTime(rtcTime);
-    RTC.squareWave(SQWAVE_NONE);                //no square waves please
-    RTC.writeRTC( RTC_STATUS, RTC.readRTC(RTC_STATUS) & ~( _BV(BB32KHZ) | _BV(EN32KHZ) ) );   //no 32kHz output either
+    RTC.squareWave(DS3232RTC::SQWAVE_NONE);     // no square waves please
+    // no 32kHz output either
+    RTC.writeRTC( DS3232RTC::DS32_STATUS, RTC.readRTC(DS3232RTC::DS32_STATUS) & ~( _BV(DS3232RTC::DS32_BB32KHZ) | _BV(DS3232RTC::DS32_EN32KHZ) ) );
     if ( RTC.oscStopped() )                     //ensure the oscillator is running
     {
-        RTC.set(rtcTime); 
+        RTC.set(rtcTime);
     }
 
     if ( !XB.begin(Serial) )
@@ -110,9 +115,9 @@ void circuit::begin(const __FlashStringHelper* fileName)
         rtcTime = RTC.get();
         time_t alarmTime = rtcTime + SLEEP_BEFORE_RESET;
         //set RTC alarm to match on hours, minutes, seconds
-        RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
-        RTC.alarm(ALARM_1);                   //clear RTC interrupt flag
-        RTC.alarmInterrupt(ALARM_1, true);    //enable alarm interrupts
+        RTC.setAlarm(DS3232RTC::ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
+        RTC.alarm(DS3232RTC::ALARM_1);                  // clear RTC interrupt flag
+        RTC.alarmInterrupt(DS3232RTC::ALARM_1, true);   // enable alarm interrupts
 
         EICRA = _BV(ISC11);               //interrupt on falling edge
         EIFR = _BV(INTF1);                //clear the interrupt flag (setting ISCnn can cause an interrupt)
@@ -131,7 +136,7 @@ void circuit::gotoSleep(bool enableRegulator)
     Serial.flush();
     Serial.end();
     digitalWrite(PIN.builtinLED, LOW);     //LED off
-    pinMode(SCL, INPUT);                   //tri-state the i2c bus   
+    pinMode(SCL, INPUT);                   //tri-state the i2c bus
     pinMode(SDA, INPUT);
 
     if (!enableRegulator) {
@@ -157,7 +162,7 @@ void circuit::gotoSleep(bool enableRegulator)
     sei();                         //ensure interrupts enabled so we can wake up again
     sleep_cpu();                   //go to sleep
     sleep_disable();               //wake up here
-    ADCSRA = adcsra;               //restore ADCSRA    
+    ADCSRA = adcsra;               //restore ADCSRA
 
     if (!enableRegulator) systemClock(CLOCK_8MHZ);
     Serial.begin(BAUD_RATE);
@@ -189,10 +194,10 @@ void circuit::systemClock(clockSpeed_t clkpr)
     }
 }
 
-void circuit::xbeeEnable(boolean enable)
+void circuit::xbeeEnable(bool enable)
 {
     static bool xbeeAwake;      //flag to avoid waking the XBee if already awake, or sleeping it if already sleeping
-    
+
     if (enable && !xbeeAwake)
     {
         digitalWrite(PIN.xbeeSleepRQ, xbeeWake);           //ask the XBee to wake up
@@ -225,7 +230,7 @@ void circuit::peripPower(bool enable)
 
 //read 1.1V reference against AVcc
 //from http://code.google.com/p/tinkerit/wiki/SecretVoltmeter
-int circuit::readVcc(void)
+int circuit::readVcc()
 {
     ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
     delay(2);                                 //Vref settling time
@@ -238,7 +243,7 @@ int circuit::readVcc(void)
 //resistors R4 and R5 form the voltage divider.
 //NOTE: When switching from the DEFAULT to the INTERNAL 1.1V ADC reference, it can take
 //5-10ms for Aref to stabilize because it is held up by a 100nF capacitor on the board.
-int circuit::readBattery(void)
+int circuit::readBattery()
 {
     const int R4 = 47500;    //ohms
     const int R5 = 10000;    //ohms
@@ -249,4 +254,3 @@ int circuit::readBattery(void)
     adc7 = analogRead(7);
     return ((adc7 - adc6) * (R4 + R5) / R5 + adc6) * 1100 / 1024;
 }
-

@@ -1,7 +1,11 @@
-//Various utility functions
-//
-//Double-A XBee Sensor Node by Jack Christensen is licensed under
-//CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/
+// Example sketch
+// Arduino GroveStreams Library
+// https://github.com/JChristensen/GroveStreams
+// Copyright (C) 2015-2024 by Jack Christensen and licensed under
+// GNU GPL v3.0, https://www.gnu.org/licenses/gpl.html
+// Example sketch: Double-A XBee Sensor Node for GroveStreams.
+
+// Miscellaneous utility functions.
 
 //print date and time to Serial
 void printDateTime(time_t t, bool newLine)
@@ -36,4 +40,3 @@ void printI00(int val, char delim)
     Serial << _DEC(val) << delim;
     return;
 }
-
