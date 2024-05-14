@@ -30,7 +30,7 @@ gsState_t GS_STATE;
 ethernetStatus_t GroveStreams::run()
 {
     ethernetStatus_t ret = NO_STATUS;
-    const char httpOKText[] = "HTTP/1.1 200 OK";
+    const char httpOKText[] = "HTTP/1.1 200";
     static char statusBuf[sizeof(httpOKText)];
 
     if ( nError >= MAX_ERROR ) {
